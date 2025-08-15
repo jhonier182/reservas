@@ -20,9 +20,6 @@
                     <a href="{{ route('reservations.create') }}" class="btn-primary">
                         <i class="fas fa-plus mr-2"></i>Nueva Reserva
                     </a>
-                    <a href="{{ route('calendar') }}" class="btn-secondary">
-                        <i class="fas fa-calendar mr-2"></i>Ver Calendario
-                    </a>
                 </div>
             </div>
         </div>
@@ -175,34 +172,14 @@
         <!-- Acciones rápidas -->
         <div class="mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <a href="{{ route('reservations.create') }}" class="flex items-center p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors duration-200">
-                    <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-plus text-blue-600"></i>
+            <div class="flex justify-center">
+                <a href="{{ route('reservations.create') }}" class="flex items-center p-6 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors duration-200">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-plus text-blue-600 text-xl"></i>
                     </div>
                     <div>
-                        <p class="font-medium text-gray-900">Nueva Reserva</p>
+                        <p class="font-medium text-gray-900 text-lg">Nueva Reserva</p>
                         <p class="text-sm text-gray-500">Crear una nueva reserva</p>
-                    </div>
-                </a>
-                
-                <a href="{{ route('calendar') }}" class="flex items-center p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors duration-200">
-                    <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-calendar text-green-600"></i>
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-900">Ver Calendario</p>
-                        <p class="text-sm text-gray-500">Gestionar tu agenda</p>
-                    </div>
-                </a>
-                
-                <a href="{{ route('google.auth') }}?email={{ Auth::user()->email }}" class="flex items-center p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors duration-200">
-                    <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                        <i class="fas fa-sync text-purple-600"></i>
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-900">Sincronizar</p>
-                        <p class="text-sm text-gray-500">Con Google Calendar</p>
                     </div>
                 </a>
             </div>

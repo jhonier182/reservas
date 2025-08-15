@@ -20,12 +20,9 @@
                     <a href="{{ route('calendar') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
                         <i class="fas fa-calendar mr-2"></i>Calendario
                     </a>
-                    <a href="{{ route('reservations.index') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
-                        <i class="fas fa-list mr-2"></i>Reservas
-                    </a>
-                    <a href="{{ route('profile') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
-                        <i class="fas fa-user mr-2"></i>Perfil
-                    </a>
+                                    <a href="{{ route('reservations.index') }}" class="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                    <i class="fas fa-list mr-2"></i>Reservas
+                </a>
                 @endauth
             </div>
 
@@ -92,9 +89,6 @@
                 </a>
                 <a href="{{ route('reservations.index') }}" class="block px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md text-base font-medium">
                     <i class="fas fa-list mr-2"></i>Reservas
-                </a>
-                <a href="{{ route('profile') }}" class="block px-3 py-2 text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md text-base font-medium">
-                    <i class="fas fa-user mr-2"></i>Perfil
                 </a>
             @endauth
         </div>
