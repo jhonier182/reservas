@@ -309,4 +309,81 @@ class GoogleCalendarService
             'has_refresh_token' => isset($tokenData['refresh_token']),
         ];
     }
+
+    /**
+     * Obtener eventos del calendario de Google
+     */
+    public function getEvents(string $email, ?string $startDate = null, ?string $endDate = null): array
+    {
+        try {
+            Log::info("Obteniendo eventos para usuario: {$email}");
+            
+            $client = $this->getClientForUser($email);
+            $service = new Calendar($client);
+            
+            // Configurar fechas por defecto si no se proporcionan
+            if (!$startDate) {
+                $startDate = Carbon::now()->startOfMonth()->toRfc3339String();
+            }
+            if (!$endDate) {
+                $endDate = Carbon::now()->endOfMonth()->toRfc3339String();
+            }
+            
+            Log::info("Buscando eventos desde {$startDate} hasta {$endDate}");
+            
+            // Obtener eventos del calendario principal
+            $optParams = [
+                'timeMin' => $startDate,
+                'timeMax' => $endDate,
+                'singleEvents' => true,
+                'orderBy' => 'startTime'
+            ];
+            
+            $results = $service->events->listEvents('primary', $optParams);
+            $events = $results->getItems();
+            
+            Log::info("Eventos encontrados: " . count($events));
+            
+            // Convertir eventos a formato estándar
+            $formattedEvents = [];
+            foreach ($events as $event) {
+                $start = $event->start->dateTime;
+                if (!$start) {
+                    $start = $event->start->date; // Eventos de todo el día
+                }
+                
+                $end = $event->end->dateTime;
+                if (!$end) {
+                    $end = $event->end->date; // Eventos de todo el día
+                }
+                
+                $formattedEvents[] = [
+                    'id' => $event->getId(),
+                    'summary' => $event->getSummary(),
+                    'description' => $event->getDescription(),
+                    'location' => $event->getLocation(),
+                    'start' => [
+                        'dateTime' => $start,
+                        'date' => $event->start->date,
+                        'timeZone' => $event->start->timeZone
+                    ],
+                    'end' => [
+                        'dateTime' => $end,
+                        'date' => $event->end->date,
+                        'timeZone' => $event->end->timeZone
+                    ],
+                    'attendees' => $event->getAttendees(),
+                    'htmlLink' => $event->getHtmlLink(),
+                    'created' => $event->getCreated(),
+                    'updated' => $event->getUpdated()
+                ];
+            }
+            
+            return $formattedEvents;
+            
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo eventos para usuario {$email}: " . $e->getMessage());
+            throw $e;
+        }
+    }
 }

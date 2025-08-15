@@ -149,6 +149,42 @@ class GoogleController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Obtener eventos del calendario de Google
+     */
+    public function getCalendarEvents(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            // Obtener email del usuario autenticado
+            $email = auth()->user()->email;
+            
+            // Obtener fechas de la petición
+            $startDate = $request->get('start_date');
+            $endDate = $request->get('end_date');
+            
+            Log::info("Solicitando eventos para usuario {$email} desde {$startDate} hasta {$endDate}");
+            
+            // Obtener eventos usando el servicio
+            $events = $this->googleService->getEvents($email, $startDate, $endDate);
+            
+            Log::info("Eventos obtenidos para usuario {$email}: " . count($events));
+            
+            return response()->json([
+                'success' => true,
+                'events' => $events,
+                'count' => count($events)
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo eventos del calendario: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error obteniendo eventos: ' . $e->getMessage(),
+                'events' => []
+            ], 500);
+        }
+    }
 }
 
 

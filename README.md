@@ -1,61 +1,205 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## 🔧 Comandos Útiles
 
-## About Laravel
+### Instalación de Dependencias
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+```bash
+# Instalar dependencias PHP con Composer
+composer install
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+# Si tienes problemas con la memoria de PHP, usa:
+composer install --ignore-platform-reqs
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+# Para desarrollo, instalar dependencias adicionales:
+composer install --dev
 
-## Learning Laravel
+# Verificar que todas las dependencias estén instaladas
+composer show
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Verificar Versiones y Extensiones
+```bash
+# Verificar versión de PHP (debe ser 8.2+)
+php --version
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+# Verificar versión de Composer
+composer --version
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# Verificar extensiones PHP necesarias
+php -m | grep -E "(curl|json|mbstring|openssl|pdo_mysql)"
 
-## Laravel Sponsors
+# Si falta alguna extensión, instálala:
+# Para XAMPP (Windows):
+# - Abre php.ini en xampp/php/
+# - Descomenta las líneas de extensiones necesarias
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+# Para Linux/Ubuntu:
+sudo apt-get install php8.2-curl php8.2-json php8.2-mbstring php8.2-openssl php8.2-mysql
 
-### Premium Partners
+# Para macOS con Homebrew:
+brew install php@8.2
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Verificar Base de Datos
+```bash
+# Verificar que MySQL esté funcionando
+mysql --version
 
-## Contributing
+# Conectar a MySQL y crear base de datos
+mysql -u root -p
+CREATE DATABASE todolist CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+SHOW DATABASES;
+exit;
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+# Verificar conexión desde Laravel
+php artisan tinker
+>>> DB::connection()->getPdo();
+>>> exit
+```
 
-## Code of Conduct
+### Comandos de Verificación Final
+```bash
+# Verificar que todas las rutas estén registradas
+php artisan route:list
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# Verificar estado de migraciones
+php artisan migrate:status
 
-## Security Vulnerabilities
+# Verificar configuración de la aplicación
+php artisan config:show
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# Verificar que el storage esté configurado
+php artisan storage:link
 
-## License
+# Limpiar todas las cachés
+php artisan optimize:clear
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# Verificar que el proyecto esté listo
+php artisan about
+```
+
+
+
+
+
+### Desarrollo
+
+  ##prender servidor
+
+
+php artisan serve  
+
+```bash
+# Limpiar caché
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+
+# Recargar configuración
+php artisan config:cache
+
+# Ver rutas disponibles
+php artisan route:list
+
+# Ver estado de migraciones
+php artisan migrate:status
+```
+
+### Base de Datos
+```bash
+# Revertir migraciones
+php artisan migrate:rollback
+
+# Ejecutar migraciones específicas
+php artisan migrate --path=database/migrations/2025_08_15_031809_create_reservations_table.php
+
+# Cargar seeders
+php artisan db:seed --class=UserSeeder
+```
+
+### Google Calendar
+```bash
+# Probar conexión
+php artisan calendar:test --user="email@gmail.com"
+
+# Ver información del token
+php artisan tinker
+>>> app('App\Services\GoogleCalendarService')->getTokenInfo('email@gmail.com')
+```
+
+### Instalación de Dependencias
+
+```bash
+# Instalar dependencias PHP con Composer
+composer install
+
+# Si tienes problemas con la memoria de PHP, usa:
+composer install --ignore-platform-reqs
+
+# Para desarrollo, instalar dependencias adicionales:
+composer install --dev
+
+# Verificar que todas las dependencias estén instaladas
+composer show
+```
+
+### Verificar Versiones y Extensiones
+```bash
+# Verificar versión de PHP (debe ser 8.2+)
+php --version
+
+# Verificar versión de Composer
+composer --version
+
+# Verificar extensiones PHP necesarias
+php -m | grep -E "(curl|json|mbstring|openssl|pdo_mysql)"
+
+# Si falta alguna extensión, instálala:
+# Para XAMPP (Windows):
+# - Abre php.ini en xampp/php/
+# - Descomenta las líneas de extensiones necesarias
+
+# Para Linux/Ubuntu:
+sudo apt-get install php8.2-curl php8.2-json php8.2-mbstring php8.2-openssl php8.2-mysql
+
+# Para macOS con Homebrew:
+brew install php@8.2
+```
+
+### Verificar Base de Datos
+```bash
+# Verificar que MySQL esté funcionando
+mysql --version
+
+# Conectar a MySQL y crear base de datos
+mysql -u root -p
+CREATE DATABASE todolist CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+SHOW DATABASES;
+exit;
+
+# Verificar conexión desde Laravel
+php artisan tinker
+>>> DB::connection()->getPdo();
+>>> exit
+```
+
+### Comandos de Verificación Final
+```bash
+# Verificar que todas las rutas estén registradas
+php artisan route:list
+
+# Verificar estado de migraciones
+php artisan migrate:status
+
+# Verificar configuración de la aplicación
+php artisan config:show
+
+# Verificar que el storage esté configurado
+php artisan storage:link
+
+# Limpiar todas las cachés
+php artisan optimize:clear
+
+# Verificar que el proyecto esté listo
+php artisan about
+```
