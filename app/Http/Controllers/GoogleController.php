@@ -2,92 +2,153 @@
 
 namespace App\Http\Controllers;
 
-use Laravel\Socialite\Facades\Socialite;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
-use App\Models\User;
-use App\Events\MensajeEnviado;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Log;
 use Google\Client;
-
+use App\Services\GoogleCalendarService;
 
 class GoogleController extends Controller
 {
-    
-    public function redirectToGoogle()
+    private GoogleCalendarService $googleService;
+
+    public function __construct(GoogleCalendarService $googleService)
     {
-        return Socialite::driver('google')->redirect();
+        $this->googleService = $googleService;
     }
 
+    /**
+     * Iniciar autorización OAuth para Google Calendar
+     */
+    public function auth(Request $request): RedirectResponse
+    {
+        $email = $request->query('email');
+        
+        if (!$email) {
+            return redirect()->back()->with('error', 'Email requerido para autorización');
+        }
 
-     public function enviarMensaje(Request $request)
-{
-    $mensaje = $request->input('mensaje');
-
-    // Evitar errores si no hay mensaje
-    if (!empty($mensaje)) {
-        event(new MensajeEnviado($mensaje));
-        return response()->json(['status' => 'Mensaje enviado correctamente']);
-    }
-
-    // Si no hay mensaje, simplemente no hace nada y devuelve respuesta vacía
-    return response()->json(['status' => 'Sin mensaje para enviar']);
-}
-
-    public function home()
-{
-    // Revisar sesión o usuario autenticado
-    $usuario = session('usuario', Auth::user());
-
-    if (!$usuario) {
-        return redirect('/auth/google');
-    }
-
-    return view('home', compact('usuario'));
-}
-
-
-
-    public function handleGoogleCallback()
-{
-    $googleUser = Socialite::driver('google')->stateless()->user();
-
-    $email = $googleUser->email;
-
-    // Validar dominio
-    $allowedDomains = ['@beltcolombia.com', '@belt.com.co', '@beltforge.com'];
-    $isAllowed = false;
-    foreach ($allowedDomains as $domain) {
-        if (str_ends_with($email, $domain)) {
-            $isAllowed = true;
-            break;
+        try {
+            Log::info("Iniciando autorización OAuth para usuario: {$email}");
+            
+            $client = new Client();
+            $client->setClientId(config('services.google.client_id'));
+            $client->setClientSecret(config('services.google.client_secret'));
+            $client->setRedirectUri(config('google.redirect_uri'));
+            $client->setScopes(config('google.scopes'));
+            $client->setAccessType(config('google.access_type'));
+            $client->setPrompt(config('google.prompt'));
+            $client->setIncludeGrantedScopes(config('google.include_granted_scopes'));
+            
+            // Guardar email en sesión para el callback
+            session(['google_auth_email' => $email]);
+            
+            $authUrl = $client->createAuthUrl();
+            
+            Log::info("URL de autorización generada para usuario: {$email}");
+            return redirect($authUrl);
+            
+        } catch (\Exception $e) {
+            Log::error("Error iniciando autorización para usuario {$email}: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Error iniciando autorización: ' . $e->getMessage());
         }
     }
-    if (!$isAllowed) {
-        return redirect()->route('no-autorizado');
+
+    /**
+     * Manejar callback de autorización OAuth
+     */
+    public function callback(Request $request): RedirectResponse
+    {
+        try {
+            $code = $request->query('code');
+            $email = session('google_auth_email');
+            
+            if (!$code || !$email) {
+                Log::error("Callback sin código o email: code={$code}, email={$email}");
+                return redirect()->route('home')->with('error', 'Error en la autorización: datos incompletos');
+            }
+            
+            Log::info("Callback recibido para usuario: {$email}");
+            
+            $client = new Client();
+            $client->setClientId(config('services.google.client_id'));
+            $client->setClientSecret(config('services.google.client_secret'));
+            $client->setRedirectUri(config('google.redirect_uri'));
+            $client->setScopes(config('google.scopes'));
+            
+            // Intercambiar código por tokens
+            $accessToken = $client->fetchAccessTokenWithAuthCode($code);
+            
+            if (isset($accessToken['error'])) {
+                Log::error("Error obteniendo token para usuario {$email}: " . json_encode($accessToken));
+                return redirect()->route('home')->with('error', 'Error obteniendo token: ' . $accessToken['error_description'] ?? $accessToken['error']);
+            }
+            
+            // Guardar token completo (incluye scope, refresh_token, etc.)
+            $this->googleService->saveToken($email, $accessToken);
+            
+            // Loggear información del token para auditoría
+            Log::info("Token obtenido para usuario {$email}", [
+                'scope' => $accessToken['scope'] ?? 'No especificado',
+                'expires_in' => $accessToken['expires_in'] ?? 'No especificado',
+                'has_refresh_token' => isset($accessToken['refresh_token']),
+                'token_type' => $accessToken['token_type'] ?? 'No especificado',
+            ]);
+            
+            // Limpiar sesión
+            session()->forget('google_auth_email');
+            
+            return redirect()->route('home')->with('success', 'Autorización de Google Calendar completada exitosamente');
+            
+        } catch (\Exception $e) {
+            Log::error("Error en callback de Google Calendar: " . $e->getMessage());
+            return redirect()->route('home')->with('error', 'Error en la autorización: ' . $e->getMessage());
+        }
     }
 
-    // Buscar o crear usuario
-    $user = User::firstOrCreate(
-        ['email' => $email],
-        ['name' => $googleUser->name, 'google_id' => $googleUser->id]
+    /**
+     * Revocar acceso de Google Calendar
+     */
+    public function revoke(Request $request): RedirectResponse
+    {
+        $email = $request->query('email');
+        
+        if (!$email) {
+            return redirect()->back()->with('error', 'Email requerido');
+        }
+        
+        try {
+            $this->googleService->removeToken($email);
+            Log::info("Acceso de Google Calendar revocado para usuario: {$email}");
+            
+            return redirect()->route('home')->with('success', 'Acceso de Google Calendar revocado correctamente');
+            
+        } catch (\Exception $e) {
+            Log::error("Error revocando acceso para usuario {$email}: " . $e->getMessage());
+            return redirect()->route('home')->with('error', 'Error revocando acceso: ' . $e->getMessage());
+        }
+    }
 
-    );
-
-    // Guardar en sesión
-    session([
-    'usuario' => [
-        'name' => $googleUser->name,
-        'email' => $googleUser->email,
-        'avatar' => $googleUser->avatar // 👈 Foto de perfil
-    ]
-]);
-
-    // Iniciar sesión
-    Auth::login($user);
-
-    return redirect()->route('home');
-}
-
+    /**
+     * Mostrar información del token
+     */
+    public function tokenInfo(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $email = $request->query('email');
+        
+        if (!$email) {
+            return response()->json(['error' => 'Email requerido'], 400);
+        }
+        
+        try {
+            $tokenInfo = $this->googleService->getTokenInfo($email);
+            return response()->json($tokenInfo);
+            
+        } catch (\Exception $e) {
+            Log::error("Error obteniendo información del token para usuario {$email}: " . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }
 
 

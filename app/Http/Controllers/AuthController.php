@@ -25,7 +25,14 @@ class AuthController extends Controller
      */
     public function redirectToGoogle(): RedirectResponse
     {
-        return Socialite::driver('google')->redirect();
+        return Socialite::driver('google')
+            ->scopes([
+                'https://www.googleapis.com/auth/calendar',
+                'https://www.googleapis.com/auth/calendar.events',
+                'https://www.googleapis.com/auth/calendar.readonly'
+            ])
+            ->with(['access_type' => 'offline', 'prompt' => 'consent'])
+            ->redirect();
     }
 
     /**
@@ -34,7 +41,10 @@ class AuthController extends Controller
     public function handleGoogleCallback(Request $request): RedirectResponse
     {
         try {
+            \Log::info('Callback de Google iniciado');
+            
             $googleUser = Socialite::driver('google')->stateless()->user();
+            \Log::info('Usuario de Google obtenido: ' . $googleUser->email);
             
             $email = $googleUser->email;
 
@@ -62,6 +72,18 @@ class AuthController extends Controller
                     'google_refresh_token' => $googleUser->refreshToken ?? null,
                 ]
             );
+            
+            // Actualizar tokens siempre (tanto para usuarios nuevos como existentes)
+            $user->update([
+                'google_id' => $googleUser->id,
+                'google_access_token' => $googleUser->token ?? null,
+                'google_refresh_token' => $googleUser->refreshToken ?? null,
+            ]);
+            
+            \Log::info('Usuario encontrado/creado: ' . $user->email);
+            \Log::info('Token de acceso: ' . ($googleUser->token ? 'SÍ' : 'NO'));
+            \Log::info('Refresh token: ' . ($googleUser->refreshToken ? 'SÍ' : 'NO'));
+            \Log::info('Tokens actualizados en base de datos');
 
             // Iniciar sesión
             Auth::login($user);

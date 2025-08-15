@@ -5,6 +5,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\GoogleCalendarController;
+use App\Http\Controllers\GoogleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,7 +43,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/reservations/{reservation}/change-status', [ReservationController::class, 'changeStatus'])->name('reservations.change-status');
     Route::post('/reservations/{reservation}/mark-completed', [ReservationController::class, 'markAsCompleted'])->name('reservations.mark-completed');
     
-    // Google Calendar
+    // Google Calendar OAuth
+    Route::prefix('google')->name('google.')->group(function () {
+        Route::get('/auth', [GoogleController::class, 'auth'])->name('auth');
+        Route::get('/callback', [GoogleController::class, 'callback'])->name('callback');
+        Route::get('/revoke', [GoogleController::class, 'revoke'])->name('revoke');
+        Route::get('/token-info', [GoogleController::class, 'tokenInfo'])->name('token-info');
+    });
+    
+    // Google Calendar API
     Route::prefix('google')->name('google.')->group(function () {
         Route::get('/calendar', [GoogleCalendarController::class, 'index'])->name('calendar.index');
         Route::get('/calendar/events', [GoogleCalendarController::class, 'listEvents'])->name('calendar.events');
