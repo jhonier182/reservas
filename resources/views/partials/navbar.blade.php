@@ -51,8 +51,8 @@
                             <a href="{{ route('profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-user mr-2"></i>Mi Perfil
                             </a>
-                            <a href="{{ route('google.calendar.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-calendar-alt mr-2"></i>Google Calendar
+                            <a href="{{ route('google.auth') }}?email={{ Auth::user()->email }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-calendar-alt mr-2"></i>Sincronizar Google
                             </a>
                             <hr class="my-1">
                             <form method="POST" action="{{ route('auth.logout') }}">

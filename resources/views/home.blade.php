@@ -196,7 +196,7 @@
                     </div>
                 </a>
                 
-                <a href="{{ route('google.calendar.index') }}" class="flex items-center p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors duration-200">
+                <a href="{{ route('google.auth') }}?email={{ Auth::user()->email }}" class="flex items-center p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors duration-200">
                     <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
                         <i class="fas fa-sync text-purple-600"></i>
                     </div>

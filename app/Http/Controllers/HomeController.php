@@ -5,18 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use App\Services\ReservationService;
-use App\Services\GoogleCalendarService;
+
 use Illuminate\Support\Facades\Auth;
 
 class HomeController extends Controller
 {
     protected ReservationService $reservationService;
-    protected GoogleCalendarService $googleCalendarService;
-
-    public function __construct(ReservationService $reservationService, GoogleCalendarService $googleCalendarService)
+    public function __construct(ReservationService $reservationService)
     {
         $this->reservationService = $reservationService;
-        $this->googleCalendarService = $googleCalendarService;
     }
 
     /**

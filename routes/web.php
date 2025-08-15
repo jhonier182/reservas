@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ReservationController;
-use App\Http\Controllers\GoogleCalendarController;
+
 use App\Http\Controllers\GoogleController;
 
 /*
@@ -51,22 +51,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/token-info', [GoogleController::class, 'tokenInfo'])->name('token-info');
     });
     
-    // Google Calendar API
-    Route::prefix('google')->name('google.')->group(function () {
-        Route::get('/calendar', [GoogleCalendarController::class, 'index'])->name('calendar.index');
-        Route::get('/calendar/events', [GoogleCalendarController::class, 'listEvents'])->name('calendar.events');
-        Route::post('/calendar/sync-events', [GoogleCalendarController::class, 'syncEvents'])->name('calendar.sync-events');
-        Route::post('/calendar/force-sync', [GoogleCalendarController::class, 'forceFullSync'])->name('calendar.force-sync');
-        Route::post('/calendar/sync-calendars', [GoogleCalendarController::class, 'syncCalendars'])->name('calendar.sync-calendars');
-        Route::get('/calendar/check-status', [GoogleCalendarController::class, 'checkSyncStatus'])->name('calendar.check-status');
-        Route::get('/calendar/events-period', [GoogleCalendarController::class, 'getEventsForPeriod'])->name('calendar.events-period');
-        Route::post('/calendar/create-event/{reservation}', [GoogleCalendarController::class, 'createEvent'])->name('calendar.create-event');
-        
-        // Nuevas funcionalidades avanzadas
-        Route::post('/calendar/recurring-event/{reservation}', [GoogleCalendarController::class, 'createRecurringEvent'])->name('calendar.recurring-event');
-        Route::post('/calendar/{googleEventId}/attendees', [GoogleCalendarController::class, 'addAttendees'])->name('calendar.add-attendees');
-        Route::post('/calendar/{googleEventId}/attachment', [GoogleCalendarController::class, 'addDriveAttachment'])->name('calendar.add-attachment');
-    });
+
     
     // Revocar acceso de Google
     Route::post('/revoke-google-access', [AuthController::class, 'revokeGoogleAccess'])->name('revoke.google.access');

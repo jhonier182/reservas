@@ -169,7 +169,10 @@ class ReservationController extends Controller
      */
     public function destroy(Reservation $reservation): RedirectResponse
     {
-        $this->authorize('delete', $reservation);
+        // Verificar que el usuario puede eliminar esta reserva
+        if ($reservation->user_id !== Auth::id()) {
+            return redirect()->back()->with('error', 'No tienes permisos para eliminar esta reserva');
+        }
 
         try {
             $this->reservationService->deleteReservation($reservation);
@@ -191,7 +194,10 @@ class ReservationController extends Controller
      */
     public function changeStatus(Request $request, Reservation $reservation): JsonResponse
     {
-        $this->authorize('update', $reservation);
+        // Verificar que el usuario puede actualizar esta reserva
+        if ($reservation->user_id !== Auth::id()) {
+            return response()->json(['error' => 'No tienes permisos para actualizar esta reserva'], 403);
+        }
 
         $validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
         $newStatus = $request->get('status');
@@ -219,10 +225,13 @@ class ReservationController extends Controller
      */
     public function markAsCompleted(Reservation $reservation): RedirectResponse
     {
-        $this->authorize('update', $reservation);
+        // Verificar que el usuario puede actualizar esta reserva
+        if ($reservation->user_id !== Auth::id()) {
+            return redirect()->back()->with('error', 'No tienes permisos para actualizar esta reserva');
+        }
 
         try {
-            $reservation->markAsCompleted();
+            $reservation->update(['status' => 'completed']);
             
             return redirect()->back()->with('success', 'Reserva marcada como completada');
             
