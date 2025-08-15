@@ -56,6 +56,14 @@
         .form-checkbox {
             @apply h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded;
         }
+        
+        .form-textarea {
+            @apply w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300 text-gray-700 placeholder-gray-400 resize-none;
+        }
+        
+        .form-select {
+            @apply w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300 text-gray-700 bg-white;
+        }
     </style>
     
     @stack('styles')
@@ -73,6 +81,14 @@
     @include('partials.footer')
     
     <!-- Scripts -->
+    
+    <!-- FullCalendar -->
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.10/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/daygrid@6.1.10/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/timegrid@6.1.10/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/interaction@6.1.10/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/list@6.1.10/index.global.min.js"></script>
+    
     @stack('scripts')
     
     <!-- Mensajes Flash -->

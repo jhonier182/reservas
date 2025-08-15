@@ -13,7 +13,7 @@
                         Calendario
                     </h1>
                     <p class="mt-2 text-gray-600">
-                        Gestiona tu agenda y reservas
+                        Gestiona tu agenda y reservas con vista completa
                     </p>
                 </div>
                 <div class="flex space-x-3">
@@ -31,22 +31,31 @@
     <!-- Contenido del Calendario -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <div class="text-center py-12">
-                <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <i class="fas fa-calendar text-blue-600 text-4xl"></i>
-                </div>
-                <h3 class="text-2xl font-bold text-gray-900 mb-4">
-                    Calendario en Desarrollo
-                </h3>
-                <p class="text-gray-600 mb-6">
-                    Esta funcionalidad estará disponible próximamente. 
-                    Por ahora, puedes gestionar tus reservas desde el dashboard.
-                </p>
-                <a href="{{ route('home') }}" class="btn-primary">
-                    <i class="fas fa-arrow-left mr-2"></i>Volver al Dashboard
-                </a>
+            <!-- Calendario FullCalendar -->
+            <div id="calendar"></div>
+            
+            <!-- Instrucciones de uso -->
+            <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+                <h4 class="font-semibold text-blue-900 mb-2">
+                    <i class="fas fa-info-circle mr-2"></i>¿Cómo usar el calendario?
+                </h4>
+                <ul class="text-sm text-blue-800 space-y-1">
+                    <li>• <strong>Click en una fecha</strong> para crear una nueva reserva</li>
+                    <li>• <strong>Click en un evento</strong> para ver detalles, editar o eliminar</li>
+                    <li>• <strong>Arrastra eventos</strong> para cambiar fechas</li>
+                    <li>• <strong>Redimensiona eventos</strong> para cambiar duración</li>
+                    <li>• <strong>Cambia de vista</strong> entre mes, semana, día y lista</li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
 @endsection
+
+@push('styles')
+<link href="{{ asset('css/fullcalendar.css') }}" rel="stylesheet">
+@endpush
+
+@push('scripts')
+<script src="{{ asset('js/calendar.js') }}"></script>
+@endpush

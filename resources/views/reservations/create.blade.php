@@ -120,6 +120,42 @@
                 </div>
 
                 <!-- Botones -->
+                <!-- Opciones Avanzadas -->
+                <div class="border-t border-gray-200 pt-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-cog text-blue-600 mr-2"></i>Opciones Avanzadas
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Evento Recurrente -->
+                        <div>
+                            <label class="form-label">
+                                <input type="checkbox" id="is_recurring" name="is_recurring" class="form-checkbox mr-2">
+                                Evento Recurrente
+                            </label>
+                            <div id="recurrence_options" class="mt-3 hidden">
+                                <select name="recurrence_type" class="form-select">
+                                    <option value="daily">Diario</option>
+                                    <option value="weekly">Semanal</option>
+                                    <option value="monthly">Mensual</option>
+                                    <option value="yearly">Anual</option>
+                                </select>
+                                <input type="number" name="recurrence_count" placeholder="Número de repeticiones" 
+                                       class="form-input mt-2" min="1" max="52">
+                            </div>
+                        </div>
+                        
+                        <!-- Conferencia Automática -->
+                        <div>
+                            <label class="form-label">
+                                <input type="checkbox" id="auto_conference" name="auto_conference" class="form-checkbox mr-2">
+                                Crear Conferencia Automática
+                            </label>
+                            <p class="text-sm text-gray-600 mt-1">Solo para reuniones y citas</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
                     <a href="{{ route('home') }}" class="btn-secondary">
                         <i class="fas fa-times mr-2"></i>Cancelar
@@ -148,6 +184,41 @@
         if (endDateInput.value && new Date(endDateInput.value) <= startDate) {
             endDateInput.value = '';
         }
+    });
+
+    // Opciones avanzadas
+    document.addEventListener('DOMContentLoaded', function() {
+        const isRecurringCheckbox = document.getElementById('is_recurring');
+        const recurrenceOptions = document.getElementById('recurrence_options');
+        const autoConferenceCheckbox = document.getElementById('auto_conference');
+        const typeSelect = document.getElementById('type');
+        
+        // Mostrar/ocultar opciones de recurrencia
+        if (isRecurringCheckbox) {
+            isRecurringCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    recurrenceOptions.classList.remove('hidden');
+                } else {
+                    recurrenceOptions.classList.add('hidden');
+                }
+            });
+        }
+        
+        // Habilitar/deshabilitar conferencia automática según el tipo
+        function updateConferenceOption() {
+            const selectedType = typeSelect.value;
+            if (selectedType === 'meeting' || selectedType === 'appointment') {
+                autoConferenceCheckbox.disabled = false;
+                autoConferenceCheckbox.parentElement.classList.remove('opacity-50');
+            } else {
+                autoConferenceCheckbox.disabled = true;
+                autoConferenceCheckbox.checked = false;
+                autoConferenceCheckbox.parentElement.classList.add('opacity-50');
+            }
+        }
+        
+        typeSelect.addEventListener('change', updateConferenceOption);
+        updateConferenceOption(); // Ejecutar al cargar la página
     });
 </script>
 @endpush

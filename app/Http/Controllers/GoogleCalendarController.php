@@ -30,16 +30,15 @@ class GoogleCalendarController extends Controller
     public function index(): View
     {
         $user = Auth::user();
+        $syncStats = $this->googleCalendarService->getSyncStats($user);
+        $hasPermissions = $this->googleCalendarService->checkCalendarPermissions($user);
+        $calendars = $this->googleCalendarService->getCalendars($user);
         
-        // Datos básicos para evitar errores con servicios no implementados
         $data = [
             'user' => $user,
-            'syncStats' => [
-                'total_events' => 0,
-                'synced_events' => 0,
-                'last_sync' => null,
-            ],
-            'hasPermissions' => false,
+            'syncStats' => $syncStats,
+            'hasPermissions' => $hasPermissions,
+            'calendars' => $calendars,
         ];
         
         return view('google.calendar.index', $data);
@@ -64,6 +63,29 @@ class GoogleCalendarController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error en la sincronización: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Sincronización completa forzada
+     */
+    public function forceFullSync(): JsonResponse
+    {
+        try {
+            $user = Auth::user();
+            $results = $this->googleCalendarService->forceFullSync($user);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Sincronización completa forzada finalizada',
+                'results' => $results
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en la sincronización completa: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -178,6 +200,117 @@ class GoogleCalendarController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener eventos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Crear evento recurrente
+     */
+    public function createRecurringEvent(Request $request, Reservation $reservation): JsonResponse
+    {
+        try {
+            $request->validate([
+                'recurrence_rules' => 'required|array',
+                'recurrence_rules.*' => 'string'
+            ]);
+
+            $result = $this->googleCalendarService->createRecurringEvent(
+                $reservation, 
+                $request->recurrence_rules
+            );
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Evento recurrente creado exitosamente',
+                    'conference_link' => $result['conference_link'] ?? null
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al crear evento recurrente: ' . $result['error']
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Agregar participantes a un evento
+     */
+    public function addAttendees(Request $request, string $googleEventId): JsonResponse
+    {
+        try {
+            $request->validate([
+                'attendees' => 'required|array',
+                'attendees.*.email' => 'required|email',
+                'attendees.*.name' => 'nullable|string'
+            ]);
+
+            $result = $this->googleCalendarService->addAttendees(
+                $googleEventId, 
+                $request->attendees
+            );
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Participantes agregados exitosamente',
+                    'attendees_count' => $result['attendees_count']
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al agregar participantes: ' . $result['error']
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Agregar archivo adjunto de Google Drive
+     */
+    public function addDriveAttachment(Request $request, string $googleEventId): JsonResponse
+    {
+        try {
+            $request->validate([
+                'drive_file_id' => 'required|string'
+            ]);
+
+            $result = $this->googleCalendarService->addDriveAttachment(
+                $googleEventId, 
+                $request->drive_file_id
+            );
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Archivo adjunto agregado exitosamente',
+                    'attachment_title' => $result['attachment_title']
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al agregar archivo: ' . $result['error']
+                ], 500);
+            }
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -103,7 +103,10 @@ class ReservationController extends Controller
      */
     public function show(Reservation $reservation): View
     {
-        $this->authorize('view', $reservation);
+        // Verificar que el usuario sea el propietario de la reserva
+        if ($reservation->user_id !== Auth::id()) {
+            abort(403, 'No tienes permiso para ver esta reserva.');
+        }
         
         return view('reservations.show', compact('reservation'));
     }
@@ -113,7 +116,10 @@ class ReservationController extends Controller
      */
     public function edit(Reservation $reservation): View
     {
-        $this->authorize('update', $reservation);
+        // Verificar que el usuario sea el propietario de la reserva
+        if ($reservation->user_id !== Auth::id()) {
+            abort(403, 'No tienes permiso para editar esta reserva.');
+        }
         
         return view('reservations.edit', compact('reservation'));
     }

@@ -108,7 +108,7 @@ class AuthController extends Controller
     /**
      * Mostrar formulario de login
      */
-    public function showLoginForm(): View
+    public function showLoginForm(): View|RedirectResponse
     {
         if (Auth::check()) {
             return redirect()->route('home');
