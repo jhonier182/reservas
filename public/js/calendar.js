@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
             },
             buttonText: {
                 today: 'Hoy',
@@ -104,6 +104,69 @@ document.addEventListener('DOMContentLoaded', function() {
                 var event = info.event;
                 console.log('Evento redimensionado:', event.title, 'duración:', event.start, 'a', event.end);
                 // Aquí podrías implementar la actualización en Google Calendar
+            },
+            
+            // Configuración específica para la vista de lista
+            views: {
+                listMonth: {
+                    listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' },
+                    listDaySideFormat: { month: 'long', day: 'numeric', year: 'numeric' },
+                    noEventsMessage: 'No hay eventos para mostrar en este mes',
+                    eventDisplay: 'block',
+                    eventTimeFormat: {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        meridiem: false,
+                        hour12: false
+                    }
+                },
+                listWeek: {
+                    listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' },
+                    listDaySideFormat: { month: 'long', day: 'numeric', year: 'numeric' },
+                    noEventsMessage: 'No hay eventos para mostrar en esta semana',
+                    eventDisplay: 'block',
+                    eventTimeFormat: {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        meridiem: false,
+                        hour12: false
+                    }
+                },
+                listDay: {
+                    listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' },
+                    listDaySideFormat: { month: 'long', day: 'numeric', year: 'numeric' },
+                    noEventsMessage: 'No hay eventos para mostrar en este día',
+                    eventDisplay: 'block',
+                    eventTimeFormat: {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        meridiem: false,
+                        hour12: false
+                    }
+                }
+            },
+            
+            // Personalizar el renderizado de eventos en la vista de lista
+            eventDidMount: function(info) {
+                // Agregar tooltip con información del evento
+                if (info.view.type.includes('list')) {
+                    var event = info.event;
+                    var tooltip = event.extendedProps.description || event.extendedProps.location || '';
+                    
+                    if (tooltip) {
+                        info.el.setAttribute('title', tooltip);
+                    }
+                    
+                    // Agregar enlace a Google Calendar si existe
+                    if (event.extendedProps.htmlLink) {
+                        var link = document.createElement('a');
+                        link.href = event.extendedProps.htmlLink;
+                        link.target = '_blank';
+                        link.className = 'ml-2 text-blue-600 hover:text-blue-800 text-xs';
+                        link.innerHTML = '<i class="fas fa-external-link-alt"></i>';
+                        info.el.appendChild(link);
+                    }
+                }
             }
         });
         

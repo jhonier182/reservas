@@ -111,6 +111,69 @@
     border-color: #3b82f6 !important;
 }
 
+/* Estilos mejorados para la vista de lista */
+.fc-list-event {
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    border-left: 4px solid #3b82f6 !important;
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%) !important;
+    transition: all 0.2s ease !important;
+}
+
+.fc-list-event:hover {
+    transform: translateX(4px) !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%) !important;
+}
+
+.fc-list-event-title {
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    font-size: 1rem !important;
+    margin-bottom: 0.25rem !important;
+}
+
+.fc-list-event-time {
+    color: #64748b !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+}
+
+.fc-list-event-dot {
+    border-color: #3b82f6 !important;
+    border-width: 3px !important;
+}
+
+.fc-list-day-cushion {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    font-weight: 600 !important;
+    font-size: 1.125rem !important;
+    padding: 1rem !important;
+    border-radius: 0.5rem !important;
+    margin-bottom: 1rem !important;
+    border: 1px solid #e2e8f0 !important;
+}
+
+.fc-list-day-text {
+    color: #1e293b !important;
+}
+
+.fc-list-empty {
+    text-align: center !important;
+    padding: 3rem !important;
+    color: #64748b !important;
+    font-size: 1.125rem !important;
+}
+
+.fc-list-empty::before {
+    content: '📅' !important;
+    font-size: 3rem !important;
+    display: block !important;
+    margin-bottom: 1rem !important;
+}
+
 .fc-timegrid-slot {
     height: 2.5rem !important;
 }
