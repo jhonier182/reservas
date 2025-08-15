@@ -36,36 +36,16 @@ class GoogleCalendarService
             
             $client = new Client();
             
-            // Configurar credenciales
-            if (file_exists($this->credentialsPath)) {
-                $client->setAuthConfig($this->credentialsPath);
-                Log::info("Credenciales de Service Account cargadas");
-                
-                // Si hay subject para impersonar, configurarlo
-                if ($this->impersonateSubject) {
-                    $client->setSubject($this->impersonateSubject);
-                    Log::info("Impersonando usuario: {$this->impersonateSubject}");
-                }
-            } else {
-                // Fallback a OAuth de usuario
+            // Cargar token del usuario si existe (PRIORIDAD ALTA)
+            $tokenPath = $this->getTokenPath($email);
+            Log::info("Buscando token en: {$tokenPath}");
+            Log::info("¿Existe archivo de token? " . (file_exists($tokenPath) ? 'SÍ' : 'NO'));
+            
+            if (file_exists($tokenPath)) {
+                $tokenData = json_decode(file_get_contents($tokenPath), true);
                 $client->setClientId(config('services.google.client_id'));
                 $client->setClientSecret(config('services.google.client_secret'));
                 $client->setRedirectUri($this->redirectUri);
-                Log::info("Configuración OAuth de usuario cargada");
-            }
-            
-            // Configurar scopes y parámetros OAuth
-            $client->setScopes($this->scopes);
-            $client->setAccessType(config('google.access_type'));
-            $client->setPrompt(config('google.prompt'));
-            $client->setIncludeGrantedScopes(config('google.include_granted_scopes'));
-            
-            Log::info("Scopes configurados: " . implode(', ', $client->getScopes()));
-            
-            // Cargar token del usuario si existe
-            $tokenPath = $this->getTokenPath($email);
-            if (file_exists($tokenPath)) {
-                $tokenData = json_decode(file_get_contents($tokenPath), true);
                 $client->setAccessToken($tokenData);
                 
                 // Verificar si el token expiró
@@ -84,10 +64,32 @@ class GoogleCalendarService
                     }
                 }
                 
-                Log::info("Token cargado para usuario: {$email}");
+                Log::info("Token OAuth cargado para usuario: {$email}");
+            } else if (file_exists($this->credentialsPath)) {
+                // Fallback a Service Account solo si no hay OAuth
+                $client->setAuthConfig($this->credentialsPath);
+                Log::info("Credenciales de Service Account cargadas (fallback)");
+                
+                // Si hay subject para impersonar, configurarlo
+                if ($this->impersonateSubject) {
+                    $client->setSubject($this->impersonateSubject);
+                    Log::info("Impersonando usuario: {$this->impersonateSubject}");
+                }
             } else {
-                Log::info("No hay token guardado para usuario: {$email}");
+                // Fallback a OAuth de usuario
+                $client->setClientId(config('services.google.client_id'));
+                $client->setClientSecret(config('services.google.client_secret'));
+                $client->setRedirectUri($this->redirectUri);
+                Log::info("Configuración OAuth de usuario cargada (fallback)");
             }
+            
+            // Configurar scopes y parámetros OAuth
+            $client->setScopes($this->scopes);
+            $client->setAccessType(config('google.access_type'));
+            $client->setPrompt(config('google.prompt'));
+            $client->setIncludeGrantedScopes(config('google.include_granted_scopes'));
+            
+            Log::info("Scopes configurados: " . implode(', ', $client->getScopes()));
             
             return $client;
             
