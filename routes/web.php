@@ -49,6 +49,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/callback', [GoogleController::class, 'callback'])->name('callback');
         Route::get('/revoke', [GoogleController::class, 'revoke'])->name('revoke');
         Route::get('/token-info', [GoogleController::class, 'tokenInfo'])->name('token-info');
+        
+        // Ruta para obtener eventos del calendario
+        Route::get('/calendar/events', [GoogleController::class, 'getCalendarEvents'])->name('calendar.events');
     });
     
 
