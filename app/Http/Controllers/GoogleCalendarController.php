@@ -30,9 +30,36 @@ class GoogleCalendarController extends Controller
     public function index(): View
     {
         $user = Auth::user();
-        $syncStats = $this->googleCalendarService->getSyncStats($user);
-        $hasPermissions = $this->googleCalendarService->checkCalendarPermissions($user);
-        $calendars = $this->googleCalendarService->getCalendars($user);
+        
+        try {
+            // Verificar permisos usando el nuevo método
+            $permissions = $this->googleCalendarService->verifyPermissions($user->email);
+            $hasPermissions = $permissions['success'];
+            
+            // Obtener calendarios usando el nuevo método
+            $calendars = $this->googleCalendarService->listCalendars($user->email);
+            
+            // Crear estadísticas básicas
+            $syncStats = [
+                'total_events' => 0,
+                'synced_events' => 0,
+                'sync_rate' => 0,
+                'last_sync' => null,
+                'has_google_access' => $hasPermissions,
+            ];
+            
+        } catch (\Exception $e) {
+            $hasPermissions = false;
+            $calendars = [];
+            $syncStats = [
+                'total_events' => 0,
+                'synced_events' => 0,
+                'sync_rate' => 0,
+                'last_sync' => null,
+                'has_google_access' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
         
         $data = [
             'user' => $user,
@@ -51,12 +78,12 @@ class GoogleCalendarController extends Controller
     {
         try {
             $user = Auth::user();
-            $results = $this->googleCalendarService->syncEvents($user);
-
+            
+            // Por ahora, retornar mensaje de que la sincronización no está implementada
             return response()->json([
-                'success' => true,
-                'message' => 'Sincronización completada',
-                'results' => $results
+                'success' => false,
+                'message' => 'Sincronización no implementada aún. Usa el comando artisan calendar:test para probar la conexión.',
+                'results' => []
             ]);
 
         } catch (\Exception $e) {
@@ -74,12 +101,12 @@ class GoogleCalendarController extends Controller
     {
         try {
             $user = Auth::user();
-            $results = $this->googleCalendarService->forceFullSync($user);
-
+            
+            // Por ahora, retornar mensaje de que la sincronización no está implementada
             return response()->json([
-                'success' => true,
-                'message' => 'Sincronización completa forzada finalizada',
-                'results' => $results
+                'success' => false,
+                'message' => 'Sincronización completa no implementada aún. Usa el comando artisan calendar:test para probar la conexión.',
+                'results' => []
             ]);
 
         } catch (\Exception $e) {
@@ -98,12 +125,11 @@ class GoogleCalendarController extends Controller
         try {
             $this->authorize('update', $reservation);
 
-            $event = $this->googleCalendarService->createEvent($reservation);
-
+            // Por ahora, retornar mensaje de que la creación no está implementada
             return response()->json([
-                'success' => true,
-                'message' => 'Evento creado en Google Calendar',
-                'event_id' => $event->id
+                'success' => false,
+                'message' => 'Creación de eventos no implementada aún. Usa el comando artisan calendar:test para probar la conexión.',
+                'event_id' => null
             ]);
 
         } catch (\Exception $e) {
@@ -122,12 +148,16 @@ class GoogleCalendarController extends Controller
         $user = Auth::user();
         $startDate = $request->get('start_date', now()->startOfMonth());
         $endDate = $request->get('end_date', now()->endOfMonth());
-
-        $events = $this->googleCalendarService->getEventsForPeriod(
-            $user, 
-            Carbon::parse($startDate), 
-            Carbon::parse($endDate)
-        );
+        
+        try {
+            // Obtener eventos usando el nuevo método
+            $events = $this->googleCalendarService->listPrimaryEvents($user->email, [
+                'timeMin' => $startDate->toRfc3339String(),
+                'timeMax' => $endDate->toRfc3339String(),
+            ]);
+        } catch (\Exception $e) {
+            $events = [];
+        }
 
         return view('google.calendar.events', compact('events', 'startDate', 'endDate'));
     }
@@ -139,12 +169,12 @@ class GoogleCalendarController extends Controller
     {
         try {
             $user = Auth::user();
-            $results = $this->googleCalendarService->syncCalendars($user);
-
+            
+            // Por ahora, retornar mensaje de que la sincronización no está implementada
             return response()->json([
-                'success' => true,
-                'message' => 'Calendarios sincronizados',
-                'results' => $results
+                'success' => false,
+                'message' => 'Sincronización de calendarios no implementada aún. Usa el comando artisan calendar:test para probar la conexión.',
+                'results' => []
             ]);
 
         } catch (\Exception $e) {
@@ -162,8 +192,19 @@ class GoogleCalendarController extends Controller
     {
         try {
             $user = Auth::user();
-            $hasPermissions = $this->googleCalendarService->checkCalendarPermissions($user);
-            $syncStats = $this->googleCalendarService->getSyncStats($user);
+            
+            // Verificar permisos usando el nuevo método
+            $permissions = $this->googleCalendarService->verifyPermissions($user->email);
+            $hasPermissions = $permissions['success'];
+            
+            // Crear estadísticas básicas
+            $syncStats = [
+                'total_events' => 0,
+                'synced_events' => 0,
+                'sync_rate' => 0,
+                'last_sync' => null,
+                'has_google_access' => $hasPermissions,
+            ];
 
             return response()->json([
                 'success' => true,
