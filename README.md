@@ -195,13 +195,7 @@ php artisan migrate:fresh
 - **URL Local**: http://localhost/todolist
 - **Servidor Artisan**: http://localhost:8000
 
-## 📞 Soporte
 
-Para problemas técnicos:
-1. Verificar logs en `storage/logs/laravel.log`
-2. Ejecutar comandos de verificación
-3. Revisar configuración de `.env`
-4. Verificar que XAMPP esté funcionando
 
 ---
 
