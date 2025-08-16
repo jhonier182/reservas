@@ -1,205 +1,217 @@
+# 🚀 Sistema de Reservas con Google Calendar
 
-## 🔧 Comandos Útiles
+## 📋 Requisitos Previos
 
-### Instalación de Dependencias
+- **XAMPP** instalado y funcionando
+- **PHP 8.1+** 
+- **Composer** instalado
+- **Git** instalado
 
+## 🗄️ Configuración de Base de Datos MySQL
+
+### 1. Iniciar XAMPP
 ```bash
-# Instalar dependencias PHP con Composer
+# Abrir XAMPP Control Panel
+# Iniciar Apache y MySQL
+```
+
+### 2. Crear Base de Datos
+```bash
+# Conectar a MySQL
+mysql -u root
+
+# Crear base de datos
+CREATE DATABASE reservas;
+
+# Verificar que se creó
+SHOW DATABASES;
+
+# Salir de MySQL
+EXIT;
+```
+
+### 3. Configurar Variables de Entorno
+```bash
+# Editar archivo .env
+# Asegurarse de que contenga:
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=reservas
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### 4. Instalar Dependencias PHP
+```bash
+# Instalar dependencias
 composer install
 
-# Si tienes problemas con la memoria de PHP, usa:
+# Si hay problemas de plataforma
 composer install --ignore-platform-reqs
 
-# Para desarrollo, instalar dependencias adicionales:
+# Instalar dependencias de desarrollo
 composer install --dev
-
-# Verificar que todas las dependencias estén instaladas
-composer show
 ```
 
-### Verificar Versiones y Extensiones
+### 5. Limpiar Caché de Configuración
 ```bash
-# Verificar versión de PHP (debe ser 8.2+)
-php --version
+# Limpiar toda la caché
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+php artisan route:clear
 
-# Verificar versión de Composer
-composer --version
-
-# Verificar extensiones PHP necesarias
-php -m | grep -E "(curl|json|mbstring|openssl|pdo_mysql)"
-
-# Si falta alguna extensión, instálala:
-# Para XAMPP (Windows):
-# - Abre php.ini en xampp/php/
-# - Descomenta las líneas de extensiones necesarias
-
-# Para Linux/Ubuntu:
-sudo apt-get install php8.2-curl php8.2-json php8.2-mbstring php8.2-openssl php8.2-mysql
-
-# Para macOS con Homebrew:
-brew install php@8.2
+# Regenerar caché
+php artisan config:cache
 ```
 
-### Verificar Base de Datos
+### 6. Ejecutar Migraciones
 ```bash
-# Verificar que MySQL esté funcionando
-mysql --version
+# Verificar estado actual
+php artisan migrate:status
 
-# Conectar a MySQL y crear base de datos
-mysql -u root -p
-CREATE DATABASE todolist CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-SHOW DATABASES;
-exit;
+# Ejecutar migraciones
+php artisan migrate
 
-# Verificar conexión desde Laravel
+# Si hay problemas, hacer fresh
+php artisan migrate:fresh
+
+# Ejecutar seeders (opcional)
+php artisan db:seed
+```
+
+### 7. Verificar Configuración
+```bash
+# Verificar conexión a base de datos
 php artisan tinker
->>> DB::connection()->getPdo();
->>> exit
-```
+DB::connection()->getPdo();
 
-### Comandos de Verificación Final
-```bash
-# Verificar que todas las rutas estén registradas
-php artisan route:list
+# Verificar configuración de base de datos
+php artisan config:show database
 
 # Verificar estado de migraciones
 php artisan migrate:status
 
-# Verificar configuración de la aplicación
-php artisan config:show
-
-# Verificar que el storage esté configurado
-php artisan storage:link
-
-# Limpiar todas las cachés
-php artisan optimize:clear
-
-# Verificar que el proyecto esté listo
-php artisan about
+# Verificar rutas
+php artisan route:list
 ```
 
+### 8. Configurar Google OAuth
+```bash
+# Crear directorio para tokens
+mkdir -p storage/app/google/tokens
 
+# Verificar permisos
+# Asegurarse de que storage/app sea escribible
+```
 
+### 9. Iniciar Servidor
+```bash
+# Iniciar servidor de desarrollo
+php artisan serve
 
+# O usar XAMPP en http://localhost/todolist
+```
 
-### Desarrollo
+## 🔧 Comandos de Verificación
 
-  ##prender servidor
+### Verificar Versiones
+```bash
+# Verificar PHP
+php --version
 
+# Verificar Composer
+composer --version
 
-php artisan serve  
+# Verificar MySQL
+mysql --version
 
+# Verificar extensiones PHP
+php -m
+```
+
+### Verificar Estado de la Aplicación
+```bash
+# Estado general
+php artisan about
+
+# Estado de migraciones
+php artisan migrate:status
+
+# Lista de rutas
+php artisan route:list
+
+# Configuración de base de datos
+php artisan config:show database
+```
+
+### Comandos de Mantenimiento
 ```bash
 # Limpiar caché
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-
-# Recargar configuración
-php artisan config:cache
-
-# Ver rutas disponibles
-php artisan route:list
-
-# Ver estado de migraciones
-php artisan migrate:status
-```
-
-### Base de Datos
-```bash
-# Revertir migraciones
-php artisan migrate:rollback
-
-# Ejecutar migraciones específicas
-php artisan migrate --path=database/migrations/2025_08_15_031809_create_reservations_table.php
-
-# Cargar seeders
-php artisan db:seed --class=UserSeeder
-```
-
-### Google Calendar
-```bash
-# Probar conexión
-php artisan calendar:test --user="email@gmail.com"
-
-# Ver información del token
-php artisan tinker
->>> app('App\Services\GoogleCalendarService')->getTokenInfo('email@gmail.com')
-```
-
-### Instalación de Dependencias
-
-```bash
-# Instalar dependencias PHP con Composer
-composer install
-
-# Si tienes problemas con la memoria de PHP, usa:
-composer install --ignore-platform-reqs
-
-# Para desarrollo, instalar dependencias adicionales:
-composer install --dev
-
-# Verificar que todas las dependencias estén instaladas
-composer show
-```
-
-### Verificar Versiones y Extensiones
-```bash
-# Verificar versión de PHP (debe ser 8.2+)
-php --version
-
-# Verificar versión de Composer
-composer --version
-
-# Verificar extensiones PHP necesarias
-php -m | grep -E "(curl|json|mbstring|openssl|pdo_mysql)"
-
-# Si falta alguna extensión, instálala:
-# Para XAMPP (Windows):
-# - Abre php.ini en xampp/php/
-# - Descomenta las líneas de extensiones necesarias
-
-# Para Linux/Ubuntu:
-sudo apt-get install php8.2-curl php8.2-json php8.2-mbstring php8.2-openssl php8.2-mysql
-
-# Para macOS con Homebrew:
-brew install php@8.2
-```
-
-### Verificar Base de Datos
-```bash
-# Verificar que MySQL esté funcionando
-mysql --version
-
-# Conectar a MySQL y crear base de datos
-mysql -u root -p
-CREATE DATABASE todolist CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-SHOW DATABASES;
-exit;
-
-# Verificar conexión desde Laravel
-php artisan tinker
->>> DB::connection()->getPdo();
->>> exit
-```
-
-### Comandos de Verificación Final
-```bash
-# Verificar que todas las rutas estén registradas
-php artisan route:list
-
-# Verificar estado de migraciones
-php artisan migrate:status
-
-# Verificar configuración de la aplicación
-php artisan config:show
-
-# Verificar que el storage esté configurado
-php artisan storage:link
-
-# Limpiar todas las cachés
 php artisan optimize:clear
 
-# Verificar que el proyecto esté listo
-php artisan about
+# Limpiar configuración
+php artisan config:clear
+
+# Limpiar vistas
+php artisan view:clear
+
+# Limpiar rutas
+php artisan route:clear
+
+# Regenerar caché
+php artisan optimize
 ```
+
+## 🚨 Solución de Problemas Comunes
+
+### Error: "Database file at path [...] does not exist"
+```bash
+# 1. Verificar que .env tenga DB_CONNECTION=mysql
+# 2. Limpiar caché
+php artisan config:clear
+php artisan config:cache
+# 3. Verificar que MySQL esté corriendo en XAMPP
+```
+
+### Error: "Connection refused"
+```bash
+# 1. Verificar que XAMPP esté corriendo
+# 2. Verificar puerto 3306
+# 3. Verificar usuario y contraseña
+```
+
+### Error: "Table doesn't exist"
+```bash
+# 1. Ejecutar migraciones
+php artisan migrate
+# 2. Si hay problemas
+php artisan migrate:fresh
+```
+
+## 📱 Funcionalidades
+
+- ✅ **Autenticación de usuarios**
+- ✅ **Integración con Google Calendar**
+- ✅ **Sistema de reservas**
+- ✅ **Vista de calendario completa**
+- ✅ **Sincronización automática**
+- ✅ **Interfaz responsive**
+
+## 🌐 Acceso
+
+- **URL Local**: http://localhost/todolist
+- **Servidor Artisan**: http://localhost:8000
+
+## 📞 Soporte
+
+Para problemas técnicos:
+1. Verificar logs en `storage/logs/laravel.log`
+2. Ejecutar comandos de verificación
+3. Revisar configuración de `.env`
+4. Verificar que XAMPP esté funcionando
+
+---
+
+**¡Sistema listo para usar! 🎉**
