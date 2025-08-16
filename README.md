@@ -97,22 +97,13 @@ php artisan migrate:status
 php artisan route:list
 ```
 
-### 8. Configurar Google OAuth
-```bash
-# Crear directorio para tokens
-mkdir -p storage/app/google/tokens
 
-# Verificar permisos
-# Asegurarse de que storage/app sea escribible
-```
 
 ### 9. Iniciar Servidor
 ```bash
 # Iniciar servidor de desarrollo
 php artisan serve
 
-# O usar XAMPP en http://localhost/todolist
-```
 
 ## 🔧 Comandos de Verificación
 
