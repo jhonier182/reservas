@@ -15,11 +15,11 @@
         <div class="text-center">
             <div class="mx-auto h-20 w-20 flex items-center justify-center mb-6">
                 <div class="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl hover:shadow-blue-500/25 transition-all duration-300 hover:scale-110">
-                    <span class="text-white text-2xl font-bold">T</span>
+                    <span class="text-white text-2xl font-bold">R</span>
                 </div>
             </div>
             <h2 class="text-4xl font-extrabold text-gray-900 mb-3">
-                Bienvenido a <span class="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">TodoList</span>
+                Bienvenido a <span class="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Reservas</span>
             </h2>
             <p class="text-lg text-gray-600">
                 Gestiona tus reservas y calendario de manera eficiente
@@ -41,98 +41,8 @@
                 </a>
             </div>
 
-            <!-- Separador -->
-            <div class="relative mb-8">
-                <div class="absolute inset-0 flex items-center">
-                    <div class="w-full border-t-2 border-gray-200"></div>
-                </div>
-                <div class="relative flex justify-center text-sm">
-                    <span class="px-4 bg-white text-gray-500 font-medium">
-                        O continúa con
-                    </span>
-                </div>
-            </div>
-
-            <!-- Formulario de login tradicional -->
-            <form method="POST" action="{{ route('auth.login') }}" class="space-y-6">
-                @csrf
-                
-                @if($errors->any())
-                    <div class="rounded-2xl bg-red-50 border-2 border-red-200 p-4">
-                        <div class="text-sm text-red-700 font-medium">
-                            @foreach($errors->all() as $error)
-                                <p>{{ $error }}</p>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
-
-                <div class="space-y-4">
-                    <div>
-                        <label for="email" class="form-label">
-                            Correo electrónico
-                        </label>
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            value="{{ old('email') }}"
-                            required
-                            class="form-input"
-                            placeholder="tu@email.com"
-                        >
-                    </div>
-
-                    <div>
-                        <label for="password" class="form-label">
-                            Contraseña
-                        </label>
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            required
-                            class="form-input"
-                            placeholder="••••••••"
-                        >
-                    </div>
-                </div>
-
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <input
-                            id="remember"
-                            name="remember"
-                            type="checkbox"
-                            class="form-checkbox"
-                        >
-                        <label for="remember" class="ml-2 block text-sm text-gray-700 font-medium">
-                            Recordarme
-                        </label>
-                    </div>
-
-                    <div class="text-sm">
-                        <a href="#" class="font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-200">
-                            ¿Olvidaste tu contraseña?
-                        </a>
-                    </div>
-                </div>
-
-                <div>
-                    <button type="submit" class="btn-primary w-full">
-                        Iniciar sesión
-                    </button>
-                </div>
-            </form>
-
-            <div class="text-center pt-4">
-                <p class="text-sm text-gray-600">
-                    ¿No tienes una cuenta?{' '}
-                    <a href="#" class="font-semibold text-blue-600 hover:text-blue-700 transition-colors duration-200">
-                        Regístrate aquí
-                    </a>
-                </p>
-            </div>
+            <!-- Información -->
+            
         </div>
 
         <!-- Información adicional -->

@@ -26,7 +26,6 @@ Route::get('/no-autorizado', function () { return view('no-autorizado'); })->nam
 Route::prefix('auth')->name('auth.')->group(function () {
     Route::get('/google', [AuthController::class, 'redirectToGoogle'])->name('google');
     Route::get('/google/callback', [AuthController::class, 'handleGoogleCallback'])->name('google.callback');
-    Route::post('/login', [AuthController::class, 'login'])->name('login');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 

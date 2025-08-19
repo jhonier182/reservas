@@ -93,12 +93,20 @@
                                             <div class="flex items-center space-x-4 text-sm text-gray-500">
                                                 <div class="flex items-center space-x-1">
                                                     <i class="fas fa-calendar"></i>
-                                                    <span>{{ \Carbon\Carbon::parse($reservation->start_date ?? now())->format('d/m/Y H:i') }}</span>
+                                                    <span>{{ \Carbon\Carbon::parse($reservation->start_date ?? now())->format('d/m/Y g:i A') }}</span>
                                                 </div>
                                                 @if($reservation->location)
                                                     <div class="flex items-center space-x-1">
                                                         <i class="fas fa-map-marker-alt"></i>
-                                                        <span>{{ $reservation->location }}</span>
+                                                        <span>
+                                                            @if($reservation->location === 'jardin')
+                                                                🌿 Jardín
+                                                            @elseif($reservation->location === 'casino')
+                                                                🎰 Casino
+                                                            @else
+                                                                {{ ucfirst($reservation->location) }}
+                                                            @endif
+                                                        </span>
                                                     </div>
                                                 @endif
                                             </div>

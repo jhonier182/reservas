@@ -104,7 +104,7 @@
                                         </div>
                                         <div>
                                             <p class="font-medium text-gray-900">{{ $reservation->title }}</p>
-                                            <p class="text-sm text-gray-500">{{ $reservation->start_time->format('d/m/Y H:i') }}</p>
+                                            <p class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($reservation->start_date)->format('d/m/Y g:i A') }}</p>
                                         </div>
                                     </div>
                                     <a href="{{ route('reservations.show', $reservation) }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">

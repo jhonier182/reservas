@@ -57,14 +57,14 @@
                             <i class="fas fa-calendar text-blue-600 mr-3"></i>
                             <div>
                                 <p class="font-medium text-gray-900">Fecha de Inicio</p>
-                                <p class="text-gray-600">{{ \Carbon\Carbon::parse($reservation->start_date)->format('d/m/Y H:i') }}</p>
+                                <p class="text-gray-600">{{ \Carbon\Carbon::parse($reservation->start_date)->format('d/m/Y g:i A') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center p-4 bg-green-50 rounded-lg">
                             <i class="fas fa-clock text-green-600 mr-3"></i>
                             <div>
                                 <p class="font-medium text-gray-900">Fecha de Fin</p>
-                                <p class="text-gray-600">{{ \Carbon\Carbon::parse($reservation->end_date)->format('d/m/Y H:i') }}</p>
+                                <p class="text-gray-600">{{ \Carbon\Carbon::parse($reservation->end_date)->format('d/m/Y g:i A') }}</p>
                             </div>
                         </div>
                         <div class="flex items-center p-4 bg-purple-50 rounded-lg">
@@ -95,7 +95,19 @@
                             <i class="fas fa-map-marker-alt text-indigo-600 mr-3"></i>
                             <div>
                                 <p class="font-medium text-gray-900">Ubicación</p>
-                                <p class="text-gray-600">{{ $reservation->location }}</p>
+                                <p class="text-gray-600 capitalize">
+                                    @if($reservation->location === 'jardin')
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            🌿 Jardín
+                                        </span>
+                                    @elseif($reservation->location === 'casino')
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                            🎰 Casino
+                                        </span>
+                                    @else
+                                        {{ ucfirst($reservation->location) }}
+                                    @endif
+                                </p>
                             </div>
                         </div>
                         @endif
@@ -103,7 +115,7 @@
                             <i class="fas fa-calendar-plus text-gray-600 mr-3"></i>
                             <div>
                                 <p class="font-medium text-gray-900">Creada</p>
-                                <p class="text-gray-600">{{ \Carbon\Carbon::parse($reservation->created_at)->format('d/m/Y H:i') }}</p>
+                                <p class="text-gray-600">{{ \Carbon\Carbon::parse($reservation->created_at)->format('d/m/Y g:i A') }}</p>
                             </div>
                         </div>
                     </div>

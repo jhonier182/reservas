@@ -49,7 +49,7 @@ class AuthController extends Controller
             $email = $googleUser->email;
 
             // Validar dominio
-            $allowedDomains = ['@beltcolombia.com', '@belt.com.co', '@beltforge.com'];
+            $allowedDomains = ['@beltcolombia.com', '@belt.com.co', '@beltforge.com', '@belforge.com'];
             $isAllowed = false;
             foreach ($allowedDomains as $domain) {
                 if (str_ends_with($email, $domain)) {

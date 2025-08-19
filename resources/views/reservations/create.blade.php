@@ -89,13 +89,15 @@
 
                 <!-- Ubicación -->
                 <div>
-                    <label for="location" class="form-label">Ubicación</label>
-                    <input type="text" 
-                           id="location" 
-                           name="location" 
-                           value="{{ old('location') }}"
-                           class="form-input @error('location') border-red-500 @enderror" 
-                           placeholder="Ej: Sala de conferencias A">
+                    <label for="location" class="form-label">Ubicación *</label>
+                    <select id="location" 
+                            name="location" 
+                            class="form-select @error('location') border-red-500 @enderror" 
+                            required>
+                        <option value="">Selecciona una ubicación</option>
+                        <option value="jardin" {{ old('location') == 'jardin' ? 'selected' : '' }}>Jardín</option>
+                        <option value="casino" {{ old('location') == 'casino' ? 'selected' : '' }}>Casino</option>
+                    </select>
                     @error('location')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -171,20 +173,33 @@
 
 @push('scripts')
 <script>
-    // Validación de fechas en tiempo real
-    document.getElementById('start_date').addEventListener('change', function() {
-        const startDate = new Date(this.value);
-        const endDateInput = document.getElementById('end_date');
+    // Verificar disponibilidad de ubicación en tiempo real
+    function checkLocationAvailability() {
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        const location = document.getElementById('location').value;
         
-        // Establecer fecha mínima para end_date
-        const minEndDate = new Date(startDate.getTime() + 30 * 60000); // 30 minutos después
-        endDateInput.min = minEndDate.toISOString().slice(0, 16);
-        
-        // Si end_date es anterior a start_date, limpiarlo
-        if (endDateInput.value && new Date(endDateInput.value) <= startDate) {
-            endDateInput.value = '';
+        if (startDate && endDate && location) {
+            // Aquí podrías hacer una llamada AJAX para verificar disponibilidad
+            // Por ahora solo validamos que las fechas sean válidas
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            
+            if (end <= start) {
+                document.getElementById('location').classList.add('border-red-500');
+                return false;
+            } else {
+                document.getElementById('location').classList.remove('border-red-500');
+                return true;
+            }
         }
-    });
+        return true;
+    }
+
+    // Event listeners para verificar disponibilidad
+    document.getElementById('start_date').addEventListener('change', checkLocationAvailability);
+    document.getElementById('end_date').addEventListener('change', checkLocationAvailability);
+    document.getElementById('location').addEventListener('change', checkLocationAvailability);
 
     // Opciones avanzadas
     document.addEventListener('DOMContentLoaded', function() {

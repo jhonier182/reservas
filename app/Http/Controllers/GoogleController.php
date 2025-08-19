@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Google\Client;
 use App\Services\GoogleCalendarService;
 
@@ -157,7 +158,7 @@ class GoogleController extends Controller
     {
         try {
             // Obtener email del usuario autenticado
-            $email = auth()->user()->email;
+            $email = Auth::user()->email;
             
             // Obtener fechas de la petición
             $startDate = $request->get('start_date');
@@ -165,15 +166,56 @@ class GoogleController extends Controller
             
             Log::info("Solicitando eventos para usuario {$email} desde {$startDate} hasta {$endDate}");
             
-            // Obtener eventos usando el servicio
-            $events = $this->googleService->getEvents($email, $startDate, $endDate);
+            // Obtener eventos de Google Calendar
+            $googleEvents = [];
+            try {
+                $googleEvents = $this->googleService->getEvents($email, $startDate, $endDate);
+            } catch (\Exception $e) {
+                Log::warning("No se pudieron obtener eventos de Google Calendar: " . $e->getMessage());
+            }
             
-            Log::info("Eventos obtenidos para usuario {$email}: " . count($events));
+            // Obtener reservas locales del usuario
+            $localReservations = [];
+            try {
+                $user = Auth::user();
+                $localReservations = \App\Models\Reservation::where('user_id', $user->id)
+                    ->whereBetween('start_date', [$startDate, $endDate])
+                    ->get()
+                    ->map(function($reservation) {
+                        return [
+                            'id' => 'local_' . $reservation->id,
+                            'title' => $reservation->title,
+                            'start' => $reservation->start_date->toISOString(),
+                            'end' => $reservation->end_date->toISOString(),
+                            'description' => $reservation->description,
+                            'location' => $reservation->location,
+                            'backgroundColor' => '#10B981', // Verde para reservas locales
+                            'borderColor' => '#059669',
+                            'textColor' => '#FFFFFF',
+                            'extendedProps' => [
+                                'type' => 'local_reservation',
+                                'reservation_id' => $reservation->id,
+                                'description' => $reservation->description,
+                                'location' => $reservation->location,
+                                'status' => $reservation->status
+                            ]
+                        ];
+                    });
+            } catch (\Exception $e) {
+                Log::warning("No se pudieron obtener reservas locales: " . $e->getMessage());
+            }
+            
+            // Combinar ambos tipos de eventos
+            $allEvents = array_merge($googleEvents, $localReservations->toArray());
+            
+            Log::info("Eventos obtenidos para usuario {$email}: Google=" . count($googleEvents) . ", Locales=" . count($localReservations) . ", Total=" . count($allEvents));
             
             return response()->json([
                 'success' => true,
-                'events' => $events,
-                'count' => count($events)
+                'events' => $allEvents,
+                'count' => count($allEvents),
+                'google_count' => count($googleEvents),
+                'local_count' => count($localReservations)
             ]);
             
         } catch (\Exception $e) {

@@ -97,6 +97,52 @@ class Reservation extends Model
         return $this->start_date < $other->end_date && $this->end_date > $other->start_date;
     }
 
+    /**
+     * Verificar si hay conflicto de ubicación en la misma fecha/hora
+     */
+    public function hasLocationConflict(): bool
+    {
+        if (!$this->location) {
+            return false;
+        }
+
+        return static::where('id', '!=', $this->id)
+            ->where('location', $this->location)
+            ->where('status', '!=', 'cancelled')
+            ->where(function ($query) {
+                $query->whereBetween('start_date', [$this->start_date, $this->end_date])
+                    ->orWhereBetween('end_date', [$this->start_date, $this->end_date])
+                    ->orWhere(function ($q) {
+                        $q->where('start_date', '<=', $this->start_date)
+                            ->where('end_date', '>=', $this->end_date);
+                    });
+            })
+            ->exists();
+    }
+
+    /**
+     * Verificar si una ubicación está disponible en un rango de fechas
+     */
+    public static function isLocationAvailable(string $location, $startDate, $endDate, $excludeId = null): bool
+    {
+        $query = static::where('location', $location)
+            ->where('status', '!=', 'cancelled')
+            ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereBetween('start_date', [$startDate, $endDate])
+                    ->orWhereBetween('end_date', [$startDate, $endDate])
+                    ->orWhere(function ($subQ) use ($startDate, $endDate) {
+                        $subQ->where('start_date', '<=', $startDate)
+                            ->where('end_date', '>=', $endDate);
+                    });
+            });
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return !$query->exists();
+    }
+
     public function canBeCancelled(): bool
     {
         return in_array($this->status, ['pending', 'confirmed']) && $this->start_date->isFuture();

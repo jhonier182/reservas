@@ -44,19 +44,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         var events = data.events.map(function(event) {
                             return {
                                 id: event.id,
-                                title: event.summary || 'Sin título',
-                                start: event.start?.dateTime || event.start?.date,
-                                end: event.end?.dateTime || event.end?.date,
+                                title: event.title || event.summary || 'Sin título',
+                                start: event.start?.dateTime || event.start?.date || event.start,
+                                end: event.end?.dateTime || event.end?.date || event.end,
                                 description: event.description || '',
                                 location: event.location || '',
-                                backgroundColor: '#3B82F6',
-                                borderColor: '#2563EB',
-                                textColor: '#FFFFFF',
+                                backgroundColor: event.backgroundColor || '#3B82F6',
+                                borderColor: event.borderColor || '#2563EB',
+                                textColor: event.textColor || '#FFFFFF',
                                 extendedProps: {
-                                    googleEventId: event.id,
+                                    googleEventId: event.googleEventId,
                                     description: event.description,
                                     location: event.location,
-                                    attendees: event.attendees
+                                    attendees: event.attendees,
+                                    type: event.extendedProps?.type || 'google_event'
                                 }
                             };
                         });
@@ -64,12 +65,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         successCallback(events);
                     } else {
                         console.error('Error cargando eventos:', data.message);
-                        successCallback([]);
+                        // Si falla Google Calendar, intentar cargar solo reservas locales
+                        loadLocalReservations(info.startStr, info.endStr, successCallback);
                     }
                 })
                 .catch(error => {
                     console.error('Error en la petición:', error);
-                    successCallback([]);
+                    // Si falla Google Calendar, intentar cargar solo reservas locales
+                    loadLocalReservations(info.startStr, info.endStr, successCallback);
                 });
             },
             
@@ -129,11 +132,11 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div>
                             <label class="text-sm font-medium text-gray-700">Inicio:</label>
-                            <p class="text-sm text-gray-900">${start ? new Date(start).toLocaleString('es-ES') : 'No especificado'}</p>
+                            <p class="text-sm text-gray-900">${start ? formatDateTime(start) : 'No especificado'}</p>
                         </div>
                         <div>
                             <label class="text-sm font-medium text-gray-700">Fin:</label>
-                            <p class="text-sm text-gray-900">${end ? new Date(end).toLocaleString('es-ES') : 'No especificado'}</p>
+                            <p class="text-sm text-gray-900">${end ? formatDateTime(end) : 'No especificado'}</p>
                         </div>
                     </div>
                     <div class="mt-6 flex justify-end">
@@ -153,5 +156,51 @@ document.addEventListener('DOMContentLoaded', function() {
                 modal.remove();
             }
         });
+    }
+    
+    // Función para cargar reservas locales
+    function loadLocalReservations(startDate, endDate, successCallback) {
+        fetch('/google/calendar/events?start_date=' + startDate + '&end_date=' + endDate, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.local_count > 0) {
+                // Filtrar solo eventos locales
+                var localEvents = data.events.filter(function(event) {
+                    return event.extendedProps && event.extendedProps.type === 'local_reservation';
+                });
+                successCallback(localEvents);
+            } else {
+                successCallback([]);
+            }
+        })
+        .catch(error => {
+            console.error('Error cargando reservas locales:', error);
+            successCallback([]);
+        });
+    }
+    
+    // Función para formatear fechas con AM/PM
+    function formatDateTime(dateString) {
+        const date = new Date(dateString);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        
+        let hours = date.getHours();
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        
+        // Convertir a formato 12 horas
+        hours = hours % 12;
+        hours = hours ? hours : 12; // Si es 0, mostrar 12
+        
+        return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
     }
 });

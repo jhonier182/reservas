@@ -94,12 +94,17 @@
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
+                    <!-- Ubicación -->
                     <div>
-                        <label for="location" class="form-label">Ubicación</label>
-                        <input type="text" id="location" name="location" 
-                               value="{{ old('location', $reservation->location) }}" 
-                               class="form-input @error('location') border-red-500 @enderror" 
-                               placeholder="Ej: Sala de conferencias">
+                        <label for="location" class="form-label">Ubicación *</label>
+                        <select id="location" 
+                                name="location" 
+                                class="form-select @error('location') border-red-500 @enderror" 
+                                required>
+                            <option value="">Selecciona una ubicación</option>
+                            <option value="jardin" {{ old('location', $reservation->location) == 'jardin' ? 'selected' : '' }}>Jardín</option>
+                            <option value="casino" {{ old('location', $reservation->location) == 'casino' ? 'selected' : '' }}>Casino</option>
+                        </select>
                         @error('location')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror

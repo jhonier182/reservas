@@ -70,10 +70,25 @@ class ReservationController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'start_date' => 'required|date|after:now',
-            'end_date' => 'required|date|after:start_date',
-            'location' => 'nullable|string|max:255',
+            'end_date' => 'required|date',
+            'location' => 'required|in:jardin,casino',
             'type' => 'required|in:meeting,event,appointment,other'
         ]);
+
+        // Validación personalizada para conflictos de ubicación
+        $validator->after(function ($validator) use ($request) {
+            $startDate = \Carbon\Carbon::parse($request->start_date);
+            $endDate = \Carbon\Carbon::parse($request->end_date);
+            
+            if ($endDate->lte($startDate)) {
+                $validator->errors()->add('end_date', 'La fecha de fin debe ser posterior a la fecha de inicio.');
+            }
+
+            // Verificar si la ubicación está disponible
+            if (!\App\Models\Reservation::isLocationAvailable($request->location, $startDate, $endDate)) {
+                $validator->errors()->add('location', 'La ubicación seleccionada no está disponible en la fecha y hora especificadas.');
+            }
+        });
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
@@ -135,10 +150,25 @@ class ReservationController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'location' => 'nullable|string|max:255',
+            'end_date' => 'required|date',
+            'location' => 'required|in:jardin,casino',
             'type' => 'required|in:meeting,event,appointment,other'
         ]);
+
+        // Validación personalizada para conflictos de ubicación
+        $validator->after(function ($validator) use ($request, $reservation) {
+            $startDate = \Carbon\Carbon::parse($request->start_date);
+            $endDate = \Carbon\Carbon::parse($request->end_date);
+            
+            if ($endDate->lte($startDate)) {
+                $validator->errors()->add('end_date', 'La fecha de fin debe ser posterior a la fecha de inicio.');
+            }
+
+            // Verificar si la ubicación está disponible (excluyendo la reserva actual)
+            if (!\App\Models\Reservation::isLocationAvailable($request->location, $startDate, $endDate, $reservation->id)) {
+                $validator->errors()->add('location', 'La ubicación seleccionada no está disponible en la fecha y hora especificadas.');
+            }
+        });
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
