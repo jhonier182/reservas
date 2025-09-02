@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
     
     if (calendarEl) {
+
         let selectedLocation = null;
         // --- arriba, antes del Calendar ---
 function buildViewMenu(calendar, anchorBtn) {
@@ -103,6 +104,76 @@ function buildViewMenu(calendar, anchorBtn) {
       loadLocalReservations(info.startStr, info.endStr, successCallback, selectedLocation);
     },
                 
+
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            locale: 'es',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listMonth'
+            },
+            buttonText: {
+                today: 'Hoy',
+                month: 'Mes',
+                week: 'Semana',
+                day: 'Día',
+                list: 'Lista'
+            },
+            height: 'auto',
+            editable: true,
+            selectable: true,
+            selectMirror: true,
+            dayMaxEvents: true,
+            weekends: true,
+            
+            // Cargar eventos de Google Calendar
+            events: function(info, successCallback, failureCallback) {
+                // Hacer petición AJAX para obtener eventos
+                fetch('/google/calendar/events?start_date=' + info.startStr + '&end_date=' + info.endStr, {
+                    method: 'GET',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Convertir eventos de Google Calendar a formato FullCalendar
+                        var events = data.events.map(function(event) {
+                            return {
+                                id: event.id,
+                                title: event.summary || 'Sin título',
+                                start: event.start?.dateTime || event.start?.date,
+                                end: event.end?.dateTime || event.end?.date,
+                                description: event.description || '',
+                                location: event.location || '',
+                                backgroundColor: '#3B82F6',
+                                borderColor: '#2563EB',
+                                textColor: '#FFFFFF',
+                                extendedProps: {
+                                    googleEventId: event.id,
+                                    description: event.description,
+                                    location: event.location,
+                                    attendees: event.attendees
+                                }
+                            };
+                        });
+                        
+                        successCallback(events);
+                    } else {
+                        console.error('Error cargando eventos:', data.message);
+                        successCallback([]);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error en la petición:', error);
+                    successCallback([]);
+                });
+            },
+
             
             // Seleccionar fecha para crear reserva
             select: function (info) {
@@ -168,11 +239,80 @@ function buildViewMenu(calendar, anchorBtn) {
             
             // Redimensionar evento para cambiar duración (solo admin)
             eventResize: function(info) {
+
                 if (!info.event.extendedProps?.canEdit) {
                     info.revert();
                     return;
                 }
                 // Solo administradores pueden redimensionar eventos
+
+                var event = info.event;
+                console.log('Evento redimensionado:', event.title, 'duración:', event.start, 'a', event.end);
+                // Aquí podrías implementar la actualización en Google Calendar
+            },
+            
+            // Configuración específica para la vista de lista
+            views: {
+                listMonth: {
+                    listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' },
+                    listDaySideFormat: { month: 'long', day: 'numeric', year: 'numeric' },
+                    noEventsMessage: 'No hay eventos para mostrar en este mes',
+                    eventDisplay: 'block',
+                    eventTimeFormat: {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        meridiem: false,
+                        hour12: false
+                    }
+                },
+                listWeek: {
+                    listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' },
+                    listDaySideFormat: { month: 'long', day: 'numeric', year: 'numeric' },
+                    noEventsMessage: 'No hay eventos para mostrar en esta semana',
+                    eventDisplay: 'block',
+                    eventTimeFormat: {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        meridiem: false,
+                        hour12: false
+                    }
+                },
+                listDay: {
+                    listDayFormat: { weekday: 'long', month: 'long', day: 'numeric' },
+                    listDaySideFormat: { month: 'long', day: 'numeric', year: 'numeric' },
+                    noEventsMessage: 'No hay eventos para mostrar en este día',
+                    eventDisplay: 'block',
+                    eventTimeFormat: {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        meridiem: false,
+                        hour12: false
+                    }
+                }
+            },
+            
+            // Personalizar el renderizado de eventos en la vista de lista
+            eventDidMount: function(info) {
+                // Agregar tooltip con información del evento
+                if (info.view.type.includes('list')) {
+                    var event = info.event;
+                    var tooltip = event.extendedProps.description || event.extendedProps.location || '';
+                    
+                    if (tooltip) {
+                        info.el.setAttribute('title', tooltip);
+                    }
+                    
+                    // Agregar enlace a Google Calendar si existe
+                    if (event.extendedProps.htmlLink) {
+                        var link = document.createElement('a');
+                        link.href = event.extendedProps.htmlLink;
+                        link.target = '_blank';
+                        link.className = 'ml-2 text-blue-600 hover:text-blue-800 text-xs';
+                        link.innerHTML = '<i class="fas fa-external-link-alt"></i>';
+                        info.el.appendChild(link);
+                    }
+                }
+
             }
 
         });
