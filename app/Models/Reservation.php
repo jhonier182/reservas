@@ -19,7 +19,8 @@ class Reservation extends Model
         'user_id',
         'status',
         'type',
-        'metadata'
+        'metadata',
+        'responsible_name'
     ];
 
     protected $casts = [

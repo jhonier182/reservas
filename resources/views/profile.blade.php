@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Mi Perfil - TodoList')
+@section('title', 'Mi Perfil - Reservas')
 
 @section('content')
 <div class="min-h-screen bg-gray-50">

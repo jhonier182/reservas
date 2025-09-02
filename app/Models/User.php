@@ -31,7 +31,8 @@ class User extends Authenticatable
         'preferences',
         'google_access_token',
         'google_refresh_token',
-        'token_expires_at'
+        'token_expires_at',
+        'role'
     ];
 
     /**
@@ -60,6 +61,12 @@ class User extends Authenticatable
     }
 
     // Relaciones
+
+    public function isAdmin(): bool
+{
+    return $this->role === 'admin';
+}
+
     public function reservations()
     {
         return $this->hasMany(Reservation::class);

@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -49,7 +50,7 @@ class AuthController extends Controller
             $email = $googleUser->email;
 
             // Validar dominio
-            $allowedDomains = ['@beltcolombia.com', '@belt.com.co', '@beltforge.com', '@belforge.com'];
+            $allowedDomains = config('admin.allowed_domains', ['@beltcolombia.com', '@belt.com.co', '@beltforge.com', '@belforge.com']);
             $isAllowed = false;
             foreach ($allowedDomains as $domain) {
                 if (str_ends_with($email, $domain)) {
@@ -70,8 +71,17 @@ class AuthController extends Controller
                     'google_id' => $googleUser->id,
                     'google_access_token' => $googleUser->token ?? null,
                     'google_refresh_token' => $googleUser->refreshToken ?? null,
+                    'password' => bcrypt(Str::random(16)), // Contraseña aleatoria para usuarios de Google
+                    'role' => 'user', // Rol por defecto
                 ]
             );
+            
+            // Si es el correo específico del admin, asignar rol de admin
+            $adminEmails = config('admin.admin_emails', ['admin@tuapp.com']);
+            if (in_array($email, $adminEmails)) {
+                $user->update(['role' => 'admin']);
+                \Log::info('Usuario admin asignado: ' . $email);
+            }
             
             // Actualizar tokens siempre (tanto para usuarios nuevos como existentes)
             $user->update([
@@ -81,6 +91,7 @@ class AuthController extends Controller
             ]);
             
             \Log::info('Usuario encontrado/creado: ' . $user->email);
+            \Log::info('Rol del usuario: ' . $user->role);
             \Log::info('Token de acceso: ' . ($googleUser->token ? 'SÍ' : 'NO'));
             \Log::info('Refresh token: ' . ($googleUser->refreshToken ? 'SÍ' : 'NO'));
             \Log::info('Tokens actualizados en base de datos');
@@ -92,6 +103,7 @@ class AuthController extends Controller
             return redirect()->route('home')->with('success', '¡Bienvenido! Has iniciado sesión correctamente.');
             
         } catch (\Exception $e) {
+            \Log::error('Error en callback de Google: ' . $e->getMessage());
             return redirect()->route('login')->with('error', 'Error en la autenticación: ' . $e->getMessage());
         }
     }

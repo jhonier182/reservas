@@ -11,6 +11,7 @@ use App\Services\ReservationService;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class ReservationController extends Controller
 {
@@ -21,6 +22,26 @@ class ReservationController extends Controller
     {
         $this->reservationService = $reservationService;
         $this->notificationService = $notificationService;
+        $this->middleware('auth'); // si requieres login
+        $this->authorizeResource(\App\Models\Reservation::class, 'reservation');
+    }
+
+    /**
+     * Redondea una fecha/hora al múltiplo de 15 minutos más cercano.
+     */
+    private function roundToNearestQuarterHour(\Carbon\Carbon $dateTime): \Carbon\Carbon
+    {
+        $minutes = $dateTime->minute;
+        $remainder = $minutes % 15;
+        if ($remainder !== 0) {
+            if ($remainder < 8) {
+                $dateTime->subMinutes($remainder);
+            } else {
+                $dateTime->addMinutes(15 - $remainder);
+            }
+        }
+        $dateTime->second(0);
+        return $dateTime;
     }
 
     /**
@@ -52,6 +73,66 @@ class ReservationController extends Controller
         return view('reservations.index', compact('reservations', 'stats', 'search', 'status', 'type'));
     }
 
+    
+    public function getAllReservations(Request $request): JsonResponse
+    {
+        $start = \Carbon\Carbon::parse($request->query('start_date', now()->startOfMonth()));
+        $end   = \Carbon\Carbon::parse($request->query('end_date',   now()->endOfMonth()));
+        $loc   = $request->query('location'); // 'jardin' | 'casino' | null
+    
+        $user = \Illuminate\Support\Facades\Auth::user();
+    
+        // 👇 Usa los nombres reales de tus columnas
+        $reservas = \App\Models\Reservation::query()
+            ->whereBetween('start_date', [$start, $end])
+            ->when($loc, fn($q) => $q->where('location', $loc))
+            ->orderBy('start_date', 'asc')
+            ->get();
+    
+        $eventos = $reservas->map(function ($r) use ($user) {
+            $ownerId = $r->user_id ?? null;
+    
+            $isAdmin = $user && (($user->role ?? null) === 'admin');
+            $isOwner = $user && $ownerId && ((int)$user->id === (int)$ownerId);
+            $canEdit = $isAdmin || $isOwner;
+    
+            return [
+                'id'    => $r->id,
+                'title' => $r->title, // 👈 title (no titulo)
+                'start' => \Carbon\Carbon::parse($r->start_date)->toIso8601String(),
+                'end'   => \Carbon\Carbon::parse($r->end_date)->toIso8601String(),
+    
+                'backgroundColor' => '#10B981',
+                'borderColor'     => '#059669',
+                'textColor'       => '#FFFFFF',
+    
+                // Permisos por evento
+                'editable'         => $canEdit,
+                'startEditable'    => $canEdit,
+                'durationEditable' => $canEdit,
+    
+                'extendedProps' => [
+                    'type'        => 'local_reservation',
+                    'description' => $r->description, // 👈 description (no descripcion)
+                    'location'    => $r->location,    // 👈 location (no ubicacion)
+                    'ownerId'     => $ownerId,
+                    'ownerEmail'  => $r->usuario_email ?? null,
+                    'canEdit'     => $canEdit,
+                    'isAdmin'     => $isAdmin,
+                    'isOwner'     => $isOwner,
+                ],
+            ];
+        })->values();
+    
+        return response()->json([
+            'success' => true,
+            'events'  => $eventos,
+        ]);
+    }
+    
+
+
+
     /**
      * Show the form for creating a new resource.
      */
@@ -66,6 +147,16 @@ class ReservationController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Redondear entradas a múltiplos de 15 antes de validar
+        if ($request->filled('start_date')) {
+            $roundedStart = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->start_date));
+            $request->merge(['start_date' => $roundedStart->format('Y-m-d H:i')]);
+        }
+        if ($request->filled('end_date')) {
+            $roundedEnd = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->end_date));
+            $request->merge(['end_date' => $roundedEnd->format('Y-m-d H:i')]);
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -74,12 +165,21 @@ class ReservationController extends Controller
             'location' => 'required|in:jardin,casino',
             'type' => 'required|in:meeting,event,appointment,other'
         ]);
+        
 
-        // Validación personalizada para conflictos de ubicación
+        // Validación personalizada para conflictos de ubicación y múltiplos de 15 minutos
         $validator->after(function ($validator) use ($request) {
             $startDate = \Carbon\Carbon::parse($request->start_date);
             $endDate = \Carbon\Carbon::parse($request->end_date);
             
+            // Validar múltiplos de 15 minutos
+            if ($startDate->minute % 15 !== 0) {
+                $validator->errors()->add('start_date', 'Los minutos de la fecha de inicio deben ser 00, 15, 30 o 45.');
+            }
+            if ($endDate->minute % 15 !== 0) {
+                $validator->errors()->add('end_date', 'Los minutos de la fecha de fin deben ser 00, 15, 30 o 45.');
+            }
+
             if ($endDate->lte($startDate)) {
                 $validator->errors()->add('end_date', 'La fecha de fin debe ser posterior a la fecha de inicio.');
             }
@@ -97,15 +197,21 @@ class ReservationController extends Controller
         try {
             $data = $request->all();
             $data['user_id'] = Auth::id();
-            
+    
+            // Forzar la sala si viene desde el calendario
+            $locked = $request->query('location');
+            if (in_array($locked, ['jardin','casino'], true)) {
+                $data['location'] = $locked;
+            }
+
+            // 👇 AÑADE ESTO: responsable por defecto = usuario actual
+            $data['responsible_name'] = Auth::user()?->name ?? 'Sistema';
+    
             $reservation = $this->reservationService->createReservation($data);
-            
-            // Enviar notificación de confirmación
             $this->notificationService->sendReservationConfirmation($reservation);
-            
+    
             return redirect()->route('reservations.show', $reservation)
                 ->with('success', 'Reserva creada correctamente');
-                
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Error al crear la reserva: ' . $e->getMessage())
@@ -146,6 +252,16 @@ class ReservationController extends Controller
     {
         $this->authorize('update', $reservation);
 
+        // Redondear entradas a múltiplos de 15 antes de validar
+        if ($request->filled('start_date')) {
+            $roundedStart = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->start_date));
+            $request->merge(['start_date' => $roundedStart->format('Y-m-d H:i')]);
+        }
+        if ($request->filled('end_date')) {
+            $roundedEnd = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->end_date));
+            $request->merge(['end_date' => $roundedEnd->format('Y-m-d H:i')]);
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -155,11 +271,19 @@ class ReservationController extends Controller
             'type' => 'required|in:meeting,event,appointment,other'
         ]);
 
-        // Validación personalizada para conflictos de ubicación
+        // Validación personalizada para conflictos de ubicación y múltiplos de 15 minutos
         $validator->after(function ($validator) use ($request, $reservation) {
             $startDate = \Carbon\Carbon::parse($request->start_date);
             $endDate = \Carbon\Carbon::parse($request->end_date);
             
+            // Validar múltiplos de 15 minutos
+            if ($startDate->minute % 15 !== 0) {
+                $validator->errors()->add('start_date', 'Los minutos de la fecha de inicio deben ser 00, 15, 30 o 45.');
+            }
+            if ($endDate->minute % 15 !== 0) {
+                $validator->errors()->add('end_date', 'Los minutos de la fecha de fin deben ser 00, 15, 30 o 45.');
+            }
+
             if ($endDate->lte($startDate)) {
                 $validator->errors()->add('end_date', 'La fecha de fin debe ser posterior a la fecha de inicio.');
             }

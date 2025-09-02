@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Reserva - TodoList')
+@section('title', 'Editar Reserva - Reservas')
 
 @section('content')
 <div class="min-h-screen bg-gray-50">
@@ -46,6 +46,21 @@
                     @enderror
                 </div>
 
+                <!-- Nombre del Responsable -->
+                <div>
+                    <label for="responsible_name" class="form-label">Nombre del Responsable *</label>
+                    <input type="text" 
+                           id="responsible_name" 
+                           name="responsible_name" 
+                           value="{{ old('responsible_name', $reservation->responsible_name ?? auth()->user()->name) }}"
+                           class="form-input @error('responsible_name') border-red-500 @enderror" 
+                           placeholder="Nombre del responsable de la reserva"
+                           required>
+                    @error('responsible_name')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <!-- Descripción -->
                 <div>
                     <label for="description" class="form-label">Descripción</label>
@@ -61,18 +76,32 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="start_date" class="form-label">Fecha y Hora de Inicio *</label>
-                        <input type="datetime-local" id="start_date" name="start_date" 
-                               value="{{ old('start_date', \Carbon\Carbon::parse($reservation->start_date)->format('Y-m-d\TH:i')) }}" 
-                               class="form-input @error('start_date') border-red-500 @enderror" required>
+                        <div class="relative">
+                            <input type="text" id="start_date" name="start_date" 
+                                   value="{{ old('start_date', \Carbon\Carbon::parse($reservation->start_date)->format('Y-m-d\\TH:i')) }}" 
+                                   placeholder="YYYY-MM-DD HH:MM"
+                                   class="form-input pr-12 @error('start_date') border-red-500 @enderror" step="900" required>
+                            <button type="button" id="start_date_trigger" 
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </button>
+                        </div>
                         @error('start_date')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
                     <div>
                         <label for="end_date" class="form-label">Fecha y Hora de Fin *</label>
-                        <input type="datetime-local" id="end_date" name="end_date" 
-                               value="{{ old('end_date', \Carbon\Carbon::parse($reservation->end_date)->format('Y-m-d\TH:i')) }}" 
-                               class="form-input @error('end_date') border-red-500 @enderror" required>
+                        <div class="relative">
+                            <input type="text" id="end_date" name="end_date" 
+                                   value="{{ old('end_date', \Carbon\Carbon::parse($reservation->end_date)->format('Y-m-d\\TH:i')) }}" 
+                                   placeholder="YYYY-MM-DD HH:MM"
+                                   class="form-input pr-12 @error('end_date') border-red-500 @enderror" step="900" required>
+                            <button type="button" id="end_date_trigger" 
+                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                                <i class="fa-solid fa-calendar-days"></i>
+                            </button>
+                        </div>
                         @error('end_date')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -93,6 +122,21 @@
                         @error('type')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
+                        <div>
+                            <label for="squad" class="form-label">Escuadrón *</label>
+                            <select id="squad" name="squad" class="form-input @error('squad') border-red-500 @enderror" required>
+                                <option value="">Seleccionar escuadrón</option>
+                                <option value="design" {{ old('squad', $reservation->squad) === 'design' ? 'selected' : '' }}>Diseño</option>
+                                <option value="budget" {{ old('squad', $reservation->squad) === 'budget' ? 'selected' : '' }}>Presupuesto</option>
+                                <option value="development" {{ old('squad', $reservation->squad) === 'development' ? 'selected' : '' }}>Desarrollo</option>
+                                <option value="manufacturing" {{ old('squad', $reservation->squad) === 'manufacturing' ? 'selected' : '' }}>Manufactura</option>
+                                <option value="sales" {{ old('squad', $reservation->squad) === 'sales' ? 'selected' : '' }}>Ventas</option>
+                                <option value="other" {{ old('squad', $reservation->squad) === 'other' ? 'selected' : '' }}>Otro</option>
+                            </select>
+                            @error('squad')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
                     <!-- Ubicación -->
                     <div>
@@ -109,6 +153,23 @@
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </div>
+                </div>
+
+                <!-- Número de Personas -->
+                <div>
+                    <label for="people_count" class="form-label">Número de Personas *</label>
+                    <input type="number" 
+                           id="people_count" 
+                           name="people_count" 
+                           value="{{ old('people_count', $reservation->people_count ?? 1) }}"
+                           class="form-input @error('people_count') border-red-500 @enderror" 
+                           placeholder="Número de personas que asistirán"
+                           min="1"
+                           max="50"
+                           required>
+                    @error('people_count')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Estado -->
@@ -144,12 +205,42 @@
 <script>
     // Validación de fechas en el cliente
     document.addEventListener('DOMContentLoaded', function() {
+        // Flatpickr para fecha/hora con minutos 00, 15, 30, 45
+        if (window.flatpickr) {
+            const startPicker = flatpickr('#start_date', {
+                enableTime: true,
+                time_24hr: true,
+                minuteIncrement: 15,
+                dateFormat: 'Y-m-d H:i'
+            });
+            const endPicker = flatpickr('#end_date', {
+                enableTime: true,
+                time_24hr: true,
+                minuteIncrement: 15,
+                dateFormat: 'Y-m-d H:i'
+            });
+            const startTrigger = document.getElementById('start_date_trigger');
+            const endTrigger = document.getElementById('end_date_trigger');
+            if (startTrigger) startTrigger.addEventListener('click', () => startPicker.open());
+            if (endTrigger) endTrigger.addEventListener('click', () => endPicker.open());
+        }
         const startDateInput = document.getElementById('start_date');
         const endDateInput = document.getElementById('end_date');
         
         function validateDates() {
-            const startDate = new Date(startDateInput.value);
-            const endDate = new Date(endDateInput.value);
+            // Redondeo visual en caso de entrada manual
+            function roundToQuarter(dateObj) {
+                if (!(dateObj instanceof Date) || isNaN(dateObj)) return null;
+                const m = dateObj.getMinutes();
+                const r = m % 15;
+                if (r !== 0) {
+                    if (r < 8) dateObj.setMinutes(m - r); else dateObj.setMinutes(m + (15 - r));
+                    dateObj.setSeconds(0);
+                }
+                return dateObj;
+            }
+            const startDate = roundToQuarter(new Date(startDateInput.value)) || new Date(startDateInput.value);
+            const endDate = roundToQuarter(new Date(endDateInput.value)) || new Date(endDateInput.value);
             
             if (startDate >= endDate) {
                 endDateInput.setCustomValidity('La fecha de fin debe ser posterior a la fecha de inicio');

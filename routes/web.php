@@ -41,7 +41,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('reservations', ReservationController::class);
     Route::post('/reservations/{reservation}/change-status', [ReservationController::class, 'changeStatus'])->name('reservations.change-status');
     Route::post('/reservations/{reservation}/mark-completed', [ReservationController::class, 'markAsCompleted'])->name('reservations.mark-completed');
-    
+    Route::get('/reservas', [ReservationController::class, 'getAllReservations'])->middleware('auth');
+
     // Google Calendar OAuth
     Route::prefix('google')->name('google.')->group(function () {
         Route::get('/auth', [GoogleController::class, 'auth'])->name('auth');
@@ -53,7 +54,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/calendar/events', [GoogleController::class, 'getCalendarEvents'])->name('calendar.events');
     });
     
+        // Web (sesiones)
+    Route::middleware(['auth', 'admin'])->group(function () {
+        Route::get('/admin/reservas', [ReservationController::class, 'index']);
+    });
 
+        // API (con Sanctum, por ejemplo)
+    Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+        Route::get('/api/admin/reservas', [ReservationController::class, 'index']);
+    });
     
     // Revocar acceso de Google
     Route::post('/revoke-google-access', [AuthController::class, 'revokeGoogleAccess'])->name('revoke.google.access');

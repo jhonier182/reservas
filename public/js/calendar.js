@@ -4,86 +4,147 @@ document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
     
     if (calendarEl) {
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            locale: 'es',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-            },
-            buttonText: {
-                today: 'Hoy',
-                month: 'Mes',
-                week: 'Semana',
-                day: 'Día',
-                list: 'Lista'
-            },
-            height: 'auto',
-            editable: true,
-            selectable: true,
-            selectMirror: true,
-            dayMaxEvents: true,
-            weekends: true,
-            
-            // Cargar eventos de Google Calendar
-            events: function(info, successCallback, failureCallback) {
-                // Hacer petición AJAX para obtener eventos
-                fetch('/google/calendar/events?start_date=' + info.startStr + '&end_date=' + info.endStr, {
-                    method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    },
-                    credentials: 'same-origin'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Convertir eventos de Google Calendar a formato FullCalendar
-                        var events = data.events.map(function(event) {
-                            return {
-                                id: event.id,
-                                title: event.title || event.summary || 'Sin título',
-                                start: event.start?.dateTime || event.start?.date || event.start,
-                                end: event.end?.dateTime || event.end?.date || event.end,
-                                description: event.description || '',
-                                location: event.location || '',
-                                backgroundColor: event.backgroundColor || '#3B82F6',
-                                borderColor: event.borderColor || '#2563EB',
-                                textColor: event.textColor || '#FFFFFF',
-                                extendedProps: {
-                                    googleEventId: event.googleEventId,
-                                    description: event.description,
-                                    location: event.location,
-                                    attendees: event.attendees,
-                                    type: event.extendedProps?.type || 'google_event'
-                                }
-                            };
-                        });
-                        
-                        successCallback(events);
-                    } else {
-                        console.error('Error cargando eventos:', data.message);
-                        // Si falla Google Calendar, intentar cargar solo reservas locales
-                        loadLocalReservations(info.startStr, info.endStr, successCallback);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error en la petición:', error);
-                    // Si falla Google Calendar, intentar cargar solo reservas locales
-                    loadLocalReservations(info.startStr, info.endStr, successCallback);
-                });
-            },
+        let selectedLocation = null;
+        // --- arriba, antes del Calendar ---
+function buildViewMenu(calendar, anchorBtn) {
+    // Cierra menús abiertos
+    document.querySelectorAll('.fc-viewmenu').forEach(m => m.remove());
+  
+    const menu = document.createElement('div');
+    menu.className = 'fc-viewmenu absolute z-50 mt-2 w-40 rounded-md border bg-white shadow-lg';
+    menu.innerHTML = `
+      <button data-view="timeGridDay"   class="w-full px-3 py-2 text-left hover:bg-gray-100">Día</button>
+      <button data-view="timeGridWeek"  class="w-full px-3 py-2 text-left hover:bg-gray-100">Semana</button>
+      <button data-view="dayGridMonth"  class="w-full px-3 py-2 text-left hover:bg-gray-100">Mes</button>
+      
+    `;
+  
+    // Posicionar debajo del botón
+    const rect = anchorBtn.getBoundingClientRect();
+    Object.assign(menu.style, {
+      top: `${rect.bottom + window.scrollY}px`,
+      left: `${rect.left + window.scrollX}px`
+    });
+  
+    document.body.appendChild(menu);
+  
+    // Click en opción
+    menu.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-view]');
+      if (!btn) return;
+      const view = btn.dataset.view;
+  
+      // Si no tienes el plugin de "multiMonthYear", caer a "dayGridMonth"
+      if (view === 'multiMonthYear' && !calendar.viewSpecs['multiMonthYear']) {
+        calendar.changeView('dayGridMonth');
+      } else {
+        calendar.changeView(view);
+      }
+  
+      // Actualiza la etiqueta del botón con la vista activa
+      const txt = (view === 'timeGridDay') ? 'Día' :
+                  (view === 'timeGridWeek') ? 'Semana' :
+                  (view === 'dayGridMonth') ? 'Mes' : 'Año';
+      const anchorLabel = anchorBtn.querySelector('.fc-button-label');
+      if (anchorLabel) anchorLabel.textContent = `Vista: ${txt}`;
+      menu.remove();
+    });
+  
+    // Cerrar al hacer click fuera / ESC
+    const close = (ev) => {
+      if (ev.type === 'keydown' && ev.key !== 'Escape') return;
+      if (ev.type === 'mousedown' && menu.contains(ev.target)) return;
+      menu.remove();
+      document.removeEventListener('mousedown', close, true);
+      document.removeEventListener('keydown', close, true);
+    };
+    document.addEventListener('mousedown', close, true);
+    document.addEventListener('keydown', close, true);
+  }
+  
+  const calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    locale: 'es',
+  
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'allBtn,jardinBtn,casinoBtn,viewFilter,listWeek'
+    },
+    customButtons: {
+      // Filtros de sala
+      allBtn:   { text: 'Todas',  click(){ selectedLocation = null;     calendar.refetchEvents(); } },
+      jardinBtn:{ text: 'Jardín', click(){ selectedLocation = 'jardin'; calendar.refetchEvents(); } },
+      casinoBtn:{ text: 'Casino', click(){ selectedLocation = 'casino'; calendar.refetchEvents(); } },
+  
+      // ✅ Deja SOLO esta versión de viewFilter
+      viewFilter: {
+        text: 'Vista: Mes', // etiqueta inicial
+        click: function(ev) {
+          const anchorBtn = this.el || ev.target;
+          buildViewMenu(calendar, anchorBtn);
+        }
+      }
+    },
+  
+    buttonText: { today:'Hoy', month:'Mes', week:'Semana', day:'Día', list:'Lista' },
+  
+    height: 'auto',
+    editable: false,
+    eventStartEditable: false,
+    eventDurationEditable: false,
+    selectable: true,
+    selectMirror: true,
+    dayMaxEvents: true,
+    weekends: true,
+  
+    events: function(info, successCallback, failureCallback) {
+      // Cargar reservas locales directamente
+      loadLocalReservations(info.startStr, info.endStr, successCallback, selectedLocation);
+    },
+                
             
             // Seleccionar fecha para crear reserva
-            select: function(info) {
-                // Redirigir a crear reserva con fecha seleccionada
-                var startDate = info.startStr;
-                var endDate = info.endStr;
-                
-                window.location.href = '/reservations/create?start_date=' + startDate + '&end_date=' + endDate;
+            select: function (info) {
+              // Helpers
+              const pad = n => String(n).padStart(2, '0');
+              const toParam = d =>
+                `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+            
+              // Redondeo a cuartos (si lo usas)
+              const floorQuarter = d => {
+                const x = new Date(d); x.setSeconds(0,0);
+                x.setMinutes(x.getMinutes() - (x.getMinutes() % 15));
+                return x;
+              };
+            
+              // Base desde FullCalendar
+              let start = new Date(info.start);
+            
+              // Si es allDay (p.ej. seleccionaste un día en la vista mensual), define hora por defecto
+              if (info.allDay) {
+                start.setHours(9, 0, 0, 0); // 09:00, ajusta si quieres otra
+              }
+            
+              // Redondear a 00/15/30/45 (opcional)
+              start = floorQuarter(start);
+            
+              // 👉 Fuerza fin = inicio (misma fecha y hora)
+              const end = new Date(start.getTime());
+            
+              // Armar querystring
+              const params = new URLSearchParams({
+                start_date: toParam(start),
+                end_date:   toParam(end)
+              });
+            
+              // Si estás filtrando por sala, inclúyela
+              if (selectedLocation) params.set('location', selectedLocation);
+            
+              window.location.href = `/reservations/create?${params.toString()}`;
             },
+            
+              
             
             // Click en evento para ver detalles
             eventClick: function(info) {
@@ -95,23 +156,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 showEventDetails(event.title, description, location, event.start, event.end);
             },
             
-            // Arrastrar evento para cambiar fecha
+            // Arrastrar evento para cambiar fecha (solo admin)
             eventDrop: function(info) {
-                var event = info.event;
-                console.log('Evento movido:', event.title, 'a', event.start);
+                if (!info.event.extendedProps?.canEdit) {
+                    info.revert();
+                    return;
+                }
+                // Solo administradores pueden arrastrar eventos
                 // Aquí podrías implementar la actualización en Google Calendar
             },
             
-            // Redimensionar evento para cambiar duración
+            // Redimensionar evento para cambiar duración (solo admin)
             eventResize: function(info) {
-                var event = info.event;
-                console.log('Evento redimensionado:', event.title, 'duración:', event.start, 'a', event.end);
-                // Aquí podrías implementar la actualización en Google Calendar
+                if (!info.event.extendedProps?.canEdit) {
+                    info.revert();
+                    return;
+                }
+                // Solo administradores pueden redimensionar eventos
             }
+
         });
         
         calendar.render();
     }
+
+    
+                // Reemplaza el botón por un <select> nativo
+                /* ===== Inyectar combobox dentro del header ===== */
+        (function injectViewSelect(){
+          // Ubica el botón generado por FullCalendar y reemplázalo por un <select>
+          const btn = calendarEl.querySelector('.fc-viewSelect-button');
+          if (!btn) return;
+
+          // Limpia contenido del botón y evita estilos raros
+          btn.innerHTML = '';
+          btn.classList.remove('fc-button-primary');   // que no se vea como botón
+          btn.classList.add('p-0', 'border-0', 'bg-transparent');
+
+          const select = document.createElement('select');
+          // estilos simples, o puedes copiar clases de tu framework
+          select.className = 'border rounded px-2 py-1 text-sm';
+          select.innerHTML = `
+            <option value="timeGridDay">Día</option>
+            <option value="timeGridWeek">Semana</option>
+            <option value="dayGridMonth">Mes</option>
+            <option value="listYear">Año</option>
+          `;
+
+          // Selecciona la vista actual
+          const current = calendar.view.type;
+          const opt = [...select.options].find(o => o.value === current);
+          if (opt) opt.selected = true;
+
+          // Cambiar vista
+          select.addEventListener('change', function () {
+            const v = this.value;
+            calendar.changeView(v);
+          });
+
+          btn.appendChild(select);
+        })();
+
     
     // Función para mostrar detalles del evento
     function showEventDetails(title, description, location, start, end) {
@@ -159,32 +264,36 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Función para cargar reservas locales
-    function loadLocalReservations(startDate, endDate, successCallback) {
-        fetch('/google/calendar/events?start_date=' + startDate + '&end_date=' + endDate, {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json',
-            },
-            credentials: 'same-origin'
+    function loadLocalReservations(startDate, endDate, successCallback, selectedLocation = null) {
+        let url = `/reservas?start_date=${startDate}&end_date=${endDate}`;
+        if (selectedLocation) url += `&location=${selectedLocation}`;
+        
+        console.log('Cargando reservas desde:', url);
+      
+        fetch(url, {
+          method: 'GET',
+          headers: { 'X-Requested-With':'XMLHttpRequest', 'Accept':'application/json' },
+          credentials: 'same-origin'
         })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
-            if (data.success && data.local_count > 0) {
-                // Filtrar solo eventos locales
-                var localEvents = data.events.filter(function(event) {
-                    return event.extendedProps && event.extendedProps.type === 'local_reservation';
-                });
-                successCallback(localEvents);
-            } else {
-                successCallback([]);
-            }
+          console.log('Respuesta del servidor:', data);
+          let evs = data.success ? data.events : [];
+          console.log('Eventos encontrados:', evs.length);
+          
+          if (selectedLocation) {
+            const norm = s => (s||'').toString().trim().toLowerCase();
+            evs = evs.filter(e => norm(e.extendedProps?.location || e.location) === selectedLocation);
+          }
+          successCallback(evs);
         })
-        .catch(error => {
-            console.error('Error cargando reservas locales:', error);
-            successCallback([]);
+        .catch(err => {
+          console.error('Error cargando reservas locales:', err);
+          successCallback([]);
         });
-    }
+      }
+      
+    
     
     // Función para formatear fechas con AM/PM
     function formatDateTime(dateString) {

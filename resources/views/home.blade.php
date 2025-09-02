@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Inicio - TodoList')
+@section('title', 'Inicio - Reservas')
 
 @section('content')
 <div class="min-h-screen bg-gray-50">
@@ -139,12 +139,12 @@
                             <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
                                 <i class="fas fa-check text-green-600 text-sm"></i>
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900">Reserva completada</p>
-                                <p class="text-sm text-gray-500">Reunión de equipo - hace 2 horas</p>
-                            </div>
-                        </div>
-                        
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-900">Responsable de la reserva</label>
+                                <div class="mt-1 text-sm text-gray-500">
+                                  {{ auth()->user()->name }}
+                                </div>
+                              </div>                       
                         <div class="flex items-start space-x-3">
                             <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
                                 <i class="fas fa-plus text-blue-600 text-sm"></i>
@@ -169,21 +169,7 @@
             </div>
         </div>
 
-        <!-- Acciones rápidas -->
-        <div class="mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones Rápidas</h3>
-            <div class="flex justify-center">
-                <a href="{{ route('reservations.create') }}" class="flex items-center p-6 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors duration-200">
-                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
-                        <i class="fas fa-plus text-blue-600 text-xl"></i>
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-900 text-lg">Nueva Reserva</p>
-                        <p class="text-sm text-gray-500">Crear una nueva reserva</p>
-                    </div>
-                </a>
-            </div>
-        </div>
+        
     </div>
 </div>
 @endsection

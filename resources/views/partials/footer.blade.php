@@ -7,10 +7,10 @@
                     <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
                         <span class="text-white text-lg font-bold">T</span>
                     </div>
-                    <span class="ml-2 text-lg font-bold text-gray-900">TodoList</span>
+                    <span class="ml-2 text-lg font-bold text-gray-900">Reservas</span>
                 </div>
                 <p class="text-gray-600 text-sm">
-                    Sistema de gestión de reservas y calendario para Belt Colombia. 
+                    Sistema de gestión de reservas y calendario para nuestra empresa Belt. 
                     Organiza tu tiempo de manera eficiente.
                 </p>
             </div>
@@ -75,20 +75,7 @@
                 <p class="text-gray-500 text-sm">
                     © {{ date('Y') }} Belt Colombia. Todos los derechos reservados.
                 </p>
-                <div class="flex space-x-6 mt-4 md:mt-0">
-                    <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors duration-200">
-                        <i class="fab fa-facebook text-lg"></i>
-                    </a>
-                    <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors duration-200">
-                        <i class="fab fa-twitter text-lg"></i>
-                    </a>
-                    <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors duration-200">
-                        <i class="fab fa-linkedin text-lg"></i>
-                    </a>
-                    <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors duration-200">
-                        <i class="fab fa-instagram text-lg"></i>
-                    </a>
-                </div>
+                
             </div>
         </div>
     </div>

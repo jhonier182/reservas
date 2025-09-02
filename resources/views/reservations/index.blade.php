@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Mis Reservas - TodoList')
+@section('title', 'Mis Reservas - Reservas')
 
 @section('content')
 <div class="min-h-screen bg-gray-50">
@@ -10,10 +10,18 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">
-                        Mis Reservas
+                        @if(auth()->check() && auth()->user()->isAdmin())
+                            Todas las Reservas
+                        @else
+                            Todas las Reservas
+                        @endif
                     </h1>
                     <p class="mt-2 text-gray-600">
-                        Gestiona todas tus reservas y eventos
+                        @if(auth()->check() && auth()->user()->isAdmin())
+                            Gestiona todas las reservas del sistema como administrador
+                        @else
+                            Visualiza todas las reservas del sistema
+                        @endif
                     </p>
                 </div>
                 <div class="flex space-x-3">
@@ -90,6 +98,24 @@
                                                 <p class="text-gray-600 text-sm mb-2">{{ $reservation->description }}</p>
                                             @endif
                                             
+                                            <!-- Información del propietario y responsable -->
+                                            <div class="flex items-center space-x-1 text-sm text-gray-500 mb-2">
+                                                <i class="fas fa-user"></i>
+                                                <span>Reservado por: {{ $reservation->user->name ?? 'Usuario no disponible' }}</span>
+                                            </div>
+                                            @if($reservation->responsible_name)
+                                                <div class="flex items-center space-x-1 text-sm text-gray-500 mb-2">
+                                                    <i class="fas fa-user-tie"></i>
+                                                    <span>Responsable: {{ $reservation->responsible_name }}</span>
+                                                </div>
+                                            @endif
+                                            @if($reservation->people_count)
+                                                <div class="flex items-center space-x-1 text-sm text-gray-500 mb-2">
+                                                    <i class="fas fa-users"></i>
+                                                    <span>{{ $reservation->people_count }} persona(s)</span>
+                                                </div>
+                                            @endif
+                                            
                                             <div class="flex items-center space-x-4 text-sm text-gray-500">
                                                 <div class="flex items-center space-x-1">
                                                     <i class="fas fa-calendar"></i>
@@ -113,12 +139,16 @@
                                         </div>
                                         
                                         <div class="flex items-center space-x-2 ml-4">
-                                            <a href="{{ route('reservations.edit', $reservation->id ?? 1) }}" 
-                                               class="text-blue-600 hover:text-blue-800 p-2">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
+                                            @can('update', $reservation)
+                                                <a href="{{ route('reservations.edit', $reservation->id ?? 1) }}" 
+                                                   class="text-blue-600 hover:text-blue-800 p-2"
+                                                   title="Editar reserva">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            @endcan
                                             <a href="{{ route('reservations.show', $reservation->id ?? 1) }}" 
-                                               class="text-green-600 hover:text-green-800 p-2">
+                                               class="text-green-600 hover:text-green-800 p-2"
+                                               title="Ver detalles">
                                                 <i class="fas fa-eye"></i>
                                             </a>
                                         </div>

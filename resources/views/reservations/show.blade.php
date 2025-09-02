@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Detalles de Reserva - TodoList')
+@section('title', 'Detalles de Reserva - Reservas')
 
 @section('content')
 <div class="min-h-screen bg-gray-50">
@@ -17,9 +17,11 @@
                     </p>
                 </div>
                 <div class="flex space-x-3">
-                    <a href="{{ route('reservations.edit', $reservation) }}" class="btn-primary">
-                        <i class="fas fa-edit mr-2"></i>Editar
-                    </a>
+                    @can('update', $reservation)
+                        <a href="{{ route('reservations.edit', $reservation) }}" class="btn-primary">
+                            <i class="fas fa-edit mr-2"></i>Editar
+                        </a>
+                    @endcan
                     <a href="{{ route('reservations.index') }}" class="btn-secondary">
                         <i class="fas fa-arrow-left mr-2"></i>Volver
                     </a>
@@ -90,6 +92,20 @@
                                 <p class="text-gray-600 capitalize">{{ $reservation->type }}</p>
                             </div>
                         </div>
+                        <div class="flex items-center p-4 bg-orange-50 rounded-lg">
+                            <i class="fas fa-user text-orange-600 mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-900">Responsable</p>
+                                <p class="text-gray-600">{{ $reservation->responsible_name ?? 'No especificado' }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center p-4 bg-pink-50 rounded-lg">
+                            <i class="fas fa-users text-pink-600 mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-900">Número de Personas</p>
+                                <p class="text-gray-600">{{ $reservation->people_count ?? 1 }} persona(s)</p>
+                            </div>
+                        </div>
                         @if($reservation->location)
                         <div class="flex items-center p-4 bg-indigo-50 rounded-lg">
                             <i class="fas fa-map-marker-alt text-indigo-600 mr-3"></i>
@@ -122,20 +138,41 @@
                 </div>
             </div>
 
+            <!-- Información del Propietario -->
+            <div class="border-t border-gray-200 pt-6 mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Información del Propietario</h3>
+                <div class="flex items-center p-4 bg-gray-50 rounded-lg">
+                    <i class="fas fa-user text-gray-600 mr-3"></i>
+                    <div>
+                        <p class="font-medium text-gray-900">Reservado por</p>
+                        <p class="text-gray-600">{{ $reservation->user->name ?? 'Usuario no disponible' }}</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Acciones -->
-            <div class="mt-8 pt-6 border-t border-gray-200">
-                <div class="flex flex-col sm:flex-row gap-4 justify-end">
-                    <a href="{{ route('reservations.edit', $reservation) }}" class="btn-primary">
-                        <i class="fas fa-edit mr-2"></i>Editar Reserva
-                    </a>
-                    <form action="{{ route('reservations.destroy', $reservation) }}" method="POST" class="inline" 
-                          onsubmit="return confirm('¿Estás seguro de que quieres eliminar esta reserva?')">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn-secondary bg-red-600 hover:bg-red-700 border-red-600 hover:border-red-700 text-white">
-                            <i class="fas fa-trash mr-2"></i>Eliminar
-                        </button>
-                    </form>
+            <div class="border-t border-gray-200 pt-6 mt-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Acciones</h3>
+                <div class="flex space-x-3">
+                    @can('update', $reservation)
+                        <a href="{{ route('reservations.edit', $reservation) }}" class="btn-primary">
+                            <i class="fas fa-edit mr-2"></i>Editar Reserva
+                        </a>
+                    @else
+                        <div class="text-sm text-gray-600 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Solo los administradores pueden editar esta reserva
+                        </div>
+                    @endcan
+
+                    @can('delete', $reservation)
+                        <form method="POST" action="{{ route('reservations.destroy', $reservation) }}" class="inline">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="btn-danger" onclick="return confirm('¿Estás seguro de que quieres eliminar esta reserva?')">
+                                <i class="fas fa-trash mr-2"></i>Eliminar Reserva
+                            </button>
+                        </form>
+                    @endcan
                 </div>
             </div>
         </div>

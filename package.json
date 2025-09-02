@@ -5,5 +5,26 @@
     "@fullcalendar/interaction": "^6.1.19",
     "@fullcalendar/list": "^6.1.19",
     "@fullcalendar/timegrid": "^6.1.19"
-  }
+  },
+  "name": "reservas",
+  "version": "1.0.0",
+  "description": "### Instalación de Dependencias",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jhonier182/reservas.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jhonier182/reservas/issues"
+  },
+  "homepage": "https://github.com/jhonier182/reservas#readme"
 }
