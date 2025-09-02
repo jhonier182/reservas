@@ -115,8 +115,10 @@ class ReservationController extends Controller
                     'type'        => 'local_reservation',
                     'description' => $r->description, // 👈 description (no descripcion)
                     'location'    => $r->location,    // 👈 location (no ubicacion)
+                    'responsible' => $r->responsible_name,        // 👈 responsable
+                    'people' => (int) ($r->people_count ?? 0),// 👈 asistentes/cupo
                     'ownerId'     => $ownerId,
-                    'ownerEmail'  => $r->usuario_email ?? null,
+                    'ownerEmail'  => $r->usuario_email,
                     'canEdit'     => $canEdit,
                     'isAdmin'     => $isAdmin,
                     'isOwner'     => $isOwner,
