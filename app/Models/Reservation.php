@@ -20,13 +20,16 @@ class Reservation extends Model
         'status',
         'type',
         'metadata',
-        'responsible_name'
+        'people_count',
+        'responsible_name',
+        'squad'
     ];
 
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
-        'metadata' => 'array'
+        'metadata' => 'array',
+        'people_count' => 'integer'
     ];
 
     // Relaciones

@@ -90,17 +90,17 @@ class ReservationController extends Controller
             ->get();
     
         $eventos = $reservas->map(function ($r) use ($user) {
-            $ownerId = $r->user_id ?? null;
+            
     
-            $isAdmin = $user && (($user->role ?? null) === 'admin');
-            $isOwner = $user && $ownerId && ((int)$user->id === (int)$ownerId);
+            $isAdmin = $user && ($user->role === 'admin');  // o $user->isAdmin()
+            $isOwner = $user && (intval($r->user_id) === intval($user->id));
             $canEdit = $isAdmin || $isOwner;
     
             return [
                 'id'    => $r->id,
                 'title' => $r->title, // 👈 title (no titulo)
-                'start' => \Carbon\Carbon::parse($r->start_date)->toIso8601String(),
-                'end'   => \Carbon\Carbon::parse($r->end_date)->toIso8601String(),
+                'start' => \Carbon\Carbon::parse($r->start_date)->timezone('America/Bogota')->format('Y-m-d\TH:i:s'),
+                'end'   => \Carbon\Carbon::parse($r->end_date)->timezone('America/Bogota')->format('Y-m-d\TH:i:s'),
     
                 'backgroundColor' => '#10B981',
                 'borderColor'     => '#059669',
@@ -117,18 +117,19 @@ class ReservationController extends Controller
                     'location'    => $r->location,    // 👈 location (no ubicacion)
                     'responsible' => $r->responsible_name,        // 👈 responsable
                     'people' => (int) ($r->people_count ?? 0),// 👈 asistentes/cupo
-                    'ownerId'     => $ownerId,
+                    'ownerId'     => $r->user_id,
                     'ownerEmail'  => $r->usuario_email,
                     'canEdit'     => $canEdit,
                     'isAdmin'     => $isAdmin,
                     'isOwner'     => $isOwner,
+                    'squad'       => $r->squad,
                 ],
             ];
         })->values();
     
         return response()->json([
             'success' => true,
-            'events'  => $eventos,
+            'events'  => $eventos->values()
         ]);
     }
     
@@ -152,11 +153,11 @@ class ReservationController extends Controller
         // Redondear entradas a múltiplos de 15 antes de validar
         if ($request->filled('start_date')) {
             $roundedStart = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->start_date));
-            $request->merge(['start_date' => $roundedStart->format('Y-m-d H:i')]);
+            $request->merge(['start_date' => $roundedStart->format('Y-m-d H:i:s')]);
         }
         if ($request->filled('end_date')) {
             $roundedEnd = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->end_date));
-            $request->merge(['end_date' => $roundedEnd->format('Y-m-d H:i')]);
+            $request->merge(['end_date' => $roundedEnd->format('Y-m-d H:i:s')]);
         }
 
         $validator = Validator::make($request->all(), [
@@ -165,8 +166,12 @@ class ReservationController extends Controller
             'start_date' => 'required|date|after:now',
             'end_date' => 'required|date',
             'location' => 'required|in:jardin,casino',
-            'type' => 'required|in:meeting,event,appointment,other'
+            'people_count' => ['required', 'integer','min:1'],
+            'type' => 'required|in:meeting,event,appointment,other',
+            'squad' => ['nullable','string','max:100'],
         ]);
+            
+        
         
 
         // Validación personalizada para conflictos de ubicación y múltiplos de 15 minutos
@@ -257,11 +262,11 @@ class ReservationController extends Controller
         // Redondear entradas a múltiplos de 15 antes de validar
         if ($request->filled('start_date')) {
             $roundedStart = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->start_date));
-            $request->merge(['start_date' => $roundedStart->format('Y-m-d H:i')]);
+            $request->merge(['start_date' => $roundedStart->format('Y-m-d H:i:s')]);
         }
         if ($request->filled('end_date')) {
             $roundedEnd = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->end_date));
-            $request->merge(['end_date' => $roundedEnd->format('Y-m-d H:i')]);
+            $request->merge(['end_date' => $roundedEnd->format('Y-m-d H:i:s')]);
         }
 
         $validator = Validator::make($request->all(), [
@@ -270,8 +275,12 @@ class ReservationController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date',
             'location' => 'required|in:jardin,casino',
+            'people_count' => ['required','integer','min:1'],
             'type' => 'required|in:meeting,event,appointment,other'
         ]);
+
+        $reservation->people_count = (int) $request->input('people_count');
+        $reservation->save();
 
         // Validación personalizada para conflictos de ubicación y múltiplos de 15 minutos
         $validator->after(function ($validator) use ($request, $reservation) {

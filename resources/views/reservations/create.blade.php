@@ -141,6 +141,29 @@
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
+                
+                <!-- Escuadrón -->
+                <div>
+                    <label for="squad" class="form-label">Escuadrón *</label>
+                    <select id="squad" name="squad" class="form-input @error('squad') border-red-500 @enderror" required>
+                        <option value="">Seleccionar escuadrón</option>
+                        <option value="design" {{ old('squad') === 'design' ? 'selected' : '' }}>Design</option>
+                        <option value="estimation" {{ old('squad') === 'estimation' ? 'selected' : '' }}>Estimation</option>
+                        <option value="development" {{ old('squad') === 'development' ? 'selected' : '' }}>Product development</option>
+                        <option value="manufacturing" {{ old('squad') === 'manufacturing' ? 'selected' : '' }}>Manufactura</option>
+                        <option value="quality" {{ old('squad') === 'quality' ? 'selected' : '' }}>Quality</option>
+                        <option value="finance" {{ old('squad') === 'finance' ? 'selected' : '' }}>Finance</option>
+                        <option value="it" {{ old('squad') === 'it' ? 'selected' : '' }}>IT</option>
+                        <option value="brand" {{ old('squad') === 'brand' ? 'selected' : '' }}>Brand & Co</option>
+                        <option value="supply" {{ old('squad') === 'supply' ? 'selected' : '' }}>Supply Chain</option>
+                        <option value="people" {{ old('squad') === 'people' ? 'selected' : '' }}>People</option>
+                    </select>
+                    @error('squad')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+                
+                  
 
                 <!-- Tipo de Reserva -->
                 <div>
@@ -165,10 +188,10 @@
                     <input type="number" 
                            id="people_count" 
                            name="people_count" 
-                           value="{{ old('people_count', 1) }}"
+                           value="{{ old('people_count', $reservation->people_count ?? 1) }}"
                            class="form-input @error('people_count') border-red-500 @enderror" 
                            placeholder="Número de personas que asistirán"
-                           min="1"
+                           min="1" step="1"
                            max="100"
                            required>
                     @error('people_count')
@@ -197,9 +220,10 @@
         if (window.flatpickr) {
             const startPicker = flatpickr('#start_date', {
                 enableTime: true,
-                time_24hr: true,
+                time_24hr: false,
                 minuteIncrement: 15,
                 dateFormat: 'Y-m-d H:i',
+                locale: 'es',
                 onChange: function(selectedDates, dateStr, instance) {
                     // Asegurar redondeo visual si usuario escribe manualmente
                     if (selectedDates[0]) {
@@ -218,9 +242,10 @@
             
             const endPicker = flatpickr('#end_date', {
                 enableTime: true,
-                time_24hr: true,
+                time_24hr: false,
                 minuteIncrement: 15,
                 dateFormat: 'Y-m-d H:i',
+                locale: 'es',
                 onChange: function(selectedDates, dateStr, instance) {
                     if (selectedDates[0]) {
                         const d = selectedDates[0];

@@ -10,7 +10,9 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">
-                        Editar Reserva
+                        @can('update', $reservation)
+                        <a href="{{ route('reservations.edit', $reservation) }}" class="btn-primary">Editar Reserva</a>
+                        @endcan
                     </h1>
                     <p class="mt-2 text-gray-600">
                         Modifica los detalles de tu reserva

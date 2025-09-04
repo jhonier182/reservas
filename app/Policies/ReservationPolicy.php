@@ -23,15 +23,14 @@ class ReservationPolicy
     public function create(User $user): bool { return true; }
 
     // Editar: solo administradores
-    public function update(User $user, Reservation $reservation): bool
-    {
-        return $user->isAdmin();
+    public function update(User $user, Reservation $r) {
+        return $user->role === 'admin' || $user->id === $r->user_id;
     }
 
     // Eliminar: solo administradores
-    public function delete(User $user, Reservation $reservation): bool
-    {
-        return $user->isAdmin();
+    public function delete(User $user, Reservation $r) {
+        return $user->role === 'admin' || $user->id === $r->user_id;
     }
+    
 }
 

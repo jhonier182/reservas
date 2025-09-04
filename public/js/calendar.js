@@ -55,6 +55,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: 'dayGridMonth',
     locale: 'es',
+    timeZone: 'local',
+    editable: true,
 
     headerToolbar: {
       left: 'prev,next today',
@@ -88,6 +90,8 @@ document.addEventListener('DOMContentLoaded', function () {
     selectMirror: true,
     dayMaxEvents: true,
     weekends: true,
+
+    
 
     // Cargar reservas locales
     events: function (info, success, failure) {
@@ -126,21 +130,30 @@ document.addEventListener('DOMContentLoaded', function () {
       const description = event.extendedProps.description || 'Sin descripción';
       const location    = event.extendedProps.location    || 'Sin ubicación';
       const responsible = event.extendedProps.responsible || 'No especificado';
-      const people      = (event.extendedProps.people ?? event.extendedProps.attendees?.length) ?? null;
+      const squad = event.extendedProps.squad || 'No especificado';
+      const people = event.extendedProps.people ?? null; // 👈 nada de poner 1 por defecto aquí
+      const canEdit = !!event.extendedProps.canEdit;
+      const editBtn = canEdit
+        ? `<a href="/reservations/${event.id}/edit" class="px-3 py-2 bg-blue-600 text-white rounded">Editar</a>`
+        : '';
+      // incluye editBtn en el footer del modal
+
+
 
   showEventDetails(event.title, description, location, event.start, event.end, {
     responsible,
-    people
+    people,
+    squad
   });
     },
 
     // Solo admin/owner pueden mover/redimensionar (el backend ya marca canEdit)
-    eventDrop: function (info) {
+    eventDrop (info) {
       if (!info.event.extendedProps?.canEdit) {
-        info.revert();
+        info.revert(); return;
       }
     },
-    eventResize: function (info) {
+    eventResize(info) {
       if (!info.event.extendedProps?.canEdit) {
         info.revert();
         return;
@@ -194,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // -------- Helpers --------
   function showEventDetails(title, description, location, start, end, extra = {}) {
-    const { responsible, people } = extra;
+    const { responsible, people, squad } = extra;
   
     const peopleText = (people === null || people === undefined)
       ? 'No especificado'
@@ -231,6 +244,11 @@ document.addEventListener('DOMContentLoaded', function () {
               <label class="text-sm font-medium text-gray-700">Fin:</label>
               <p class="text-sm text-gray-900">${end ? formatDateTime(end) : 'No especificado'}</p>
             </div>
+            <div>
+              <label class="text-sm font-medium text-gray-700">Escuadrón:</label>
+              <p class="text-sm text-gray-900">${squad}</p>
+            </div>
+
           </div>
           <div class="mt-6 flex justify-end">
             <button class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400" onclick="this.closest('.fixed').remove()">Cerrar</button>
