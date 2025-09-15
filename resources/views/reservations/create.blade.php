@@ -123,18 +123,28 @@
                             </p>
                         </div>
                         <input type="hidden" name="location" value="{{ $lockedLocation }}">
-                        <select class="form-select" disabled>
-                            <option value="jardin" {{ $lockedLocation==='jardin' ? 'selected' : '' }}>Jardín</option>
-                            <option value="casino" {{ $lockedLocation==='casino' ? 'selected' : '' }}>Casino</option>
-                        </select>
+                        <div class="relative">
+                            <select class="form-select appearance-none bg-gray-100 cursor-not-allowed" disabled>
+                                <option value="jardin" {{ $lockedLocation==='jardin' ? 'selected' : '' }}> Jardín</option>
+                                <option value="casino" {{ $lockedLocation==='casino' ? 'selected' : '' }}> Casino</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-lock text-gray-400"></i>
+                            </div>
+                        </div>
                     @else
-                        <select id="location" name="location"
-                                class="form-select @error('location') border-red-500 @enderror"
-                                required>
-                            <option value="">Selecciona una ubicación</option>
-                            <option value="jardin" {{ old('location')=='jardin' ? 'selected' : '' }}>Jardín</option>
-                            <option value="casino" {{ old('location')=='casino' ? 'selected' : '' }}>Casino</option>
-                        </select>
+                        <div class="relative">
+                            <select id="location" name="location"
+                                    class="form-select appearance-none bg-white hover:bg-gray-50 focus:bg-white cursor-pointer transition-colors duration-200 @error('location') border-red-500 @enderror"
+                                    required>
+                                <option value="">Selecciona una ubicación</option>
+                                <option value="jardin" {{ old('location')=='jardin' ? 'selected' : '' }}> Jardín</option>
+                                <option value="casino" {{ old('location')=='casino' ? 'selected' : '' }}> Casino</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200 group-hover:text-gray-600"></i>
+                            </div>
+                        </div>
                     @endif
 
                     @error('location')
@@ -145,19 +155,26 @@
                 <!-- Escuadrón -->
                 <div>
                     <label for="squad" class="form-label">Escuadrón *</label>
-                    <select id="squad" name="squad" class="form-input @error('squad') border-red-500 @enderror" required>
-                        <option value="">Seleccionar escuadrón</option>
-                        <option value="design" {{ old('squad') === 'design' ? 'selected' : '' }}>Design</option>
-                        <option value="estimation" {{ old('squad') === 'estimation' ? 'selected' : '' }}>Estimation</option>
-                        <option value="development" {{ old('squad') === 'development' ? 'selected' : '' }}>Product development</option>
-                        <option value="manufacturing" {{ old('squad') === 'manufacturing' ? 'selected' : '' }}>Manufactura</option>
-                        <option value="quality" {{ old('squad') === 'quality' ? 'selected' : '' }}>Quality</option>
-                        <option value="finance" {{ old('squad') === 'finance' ? 'selected' : '' }}>Finance</option>
-                        <option value="it" {{ old('squad') === 'it' ? 'selected' : '' }}>IT</option>
-                        <option value="brand" {{ old('squad') === 'brand' ? 'selected' : '' }}>Brand & Co</option>
-                        <option value="supply" {{ old('squad') === 'supply' ? 'selected' : '' }}>Supply Chain</option>
-                        <option value="people" {{ old('squad') === 'people' ? 'selected' : '' }}>People</option>
-                    </select>
+                    <div class="relative">
+                        <select id="squad" name="squad" class="form-select appearance-none bg-white hover:bg-gray-50 focus:bg-white cursor-pointer transition-colors duration-200 @error('squad') border-red-500 @enderror" required>
+                            <option value="">Seleccionar escuadrón</option>
+                            <option value="design" {{ old('squad') === 'design' ? 'selected' : '' }}> Design</option>
+                            <option value="estimation" {{ old('squad') === 'estimation' ? 'selected' : '' }}> Estimation</option>
+                            <option value="development" {{ old('squad') === 'development' ? 'selected' : '' }}> Product Development</option>
+                            <option value="manufacturing" {{ old('squad') === 'manufacturing' ? 'selected' : '' }}> Manufactura</option>
+                            <option value="quality" {{ old('squad') === 'quality' ? 'selected' : '' }}> Quality</option>
+                            <option value="finance" {{ old('squad') === 'finance' ? 'selected' : '' }}> Finance</option>
+                            <option value="it" {{ old('squad') === 'it' ? 'selected' : '' }}> IT</option>
+                            <option value="brand" {{ old('squad') === 'brand' ? 'selected' : '' }}> Brand & Co</option>
+                            <option value="supply" {{ old('squad') === 'supply' ? 'selected' : '' }}> Supply Chain</option>
+                            <option value="people" {{ old('squad') === 'people' ? 'selected' : '' }}> People</option>
+                            <option value="Maestro" {{ old('squad') === 'Maestro' ? 'selected' : '' }}> Maestro</option>
+
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200 group-hover:text-gray-600"></i>
+                        </div>
+                    </div>
                     @error('squad')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -168,15 +185,18 @@
                 <!-- Tipo de Reserva -->
                 <div>
                     <label for="type" class="form-label">Tipo de Reserva *</label>
-                    <select id="type" name="type"
-                            class="form-select @error('type') border-red-500 @enderror"
-                            required>
-                        <option value="">Selecciona un tipo</option>
-                        <option value="meeting" {{ old('type')=='meeting' ? 'selected' : '' }}>Reunión</option>
-                        <option value="event" {{ old('type')=='event' ? 'selected' : '' }}>Evento</option>
-                        <option value="appointment" {{ old('type')=='appointment' ? 'selected' : '' }}>Cita</option>
-                        <option value="other" {{ old('type')=='other' ? 'selected' : '' }}>Otro</option>
-                    </select>
+                    <div class="relative">
+                        <select id="type" name="type"
+                                class="form-select appearance-none bg-white hover:bg-gray-50 focus:bg-white cursor-pointer transition-colors duration-200 @error('type') border-red-500 @enderror"
+                                required>
+                            <option value="">Selecciona un tipo</option>
+                            <option value="meeting" {{ old('type')=='meeting' ? 'selected' : '' }}> Reunión</option>
+                            <option value="event" {{ old('type')=='event' ? 'selected' : '' }}> Evento</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200 group-hover:text-gray-600"></i>
+                        </div>
+                    </div>
                     @error('type')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -260,6 +280,38 @@
                 }
             });
         }
+
+        // Mejorar interactividad de los comboboxes
+        const selects = document.querySelectorAll('select');
+        selects.forEach(select => {
+            const container = select.closest('.relative');
+            const chevron = container?.querySelector('.fa-chevron-down');
+            
+            if (select && container && chevron) {
+                // Agregar clase group para hover effects
+                container.classList.add('group');
+                
+                // Animación del chevron al abrir/cerrar
+                select.addEventListener('focus', () => {
+                    chevron.style.transform = 'rotate(180deg)';
+                });
+                
+                select.addEventListener('blur', () => {
+                    chevron.style.transform = 'rotate(0deg)';
+                });
+                
+                // Cambiar color del chevron al hover
+                container.addEventListener('mouseenter', () => {
+                    chevron.classList.remove('text-gray-400');
+                    chevron.classList.add('text-gray-600');
+                });
+                
+                container.addEventListener('mouseleave', () => {
+                    chevron.classList.remove('text-gray-600');
+                    chevron.classList.add('text-gray-400');
+                });
+            }
+        });
     });
 </script>
 @endpush

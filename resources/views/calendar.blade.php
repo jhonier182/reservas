@@ -72,6 +72,64 @@
 
 @push('styles')
 <link href="{{ asset('css/fullcalendar.css') }}" rel="stylesheet">
+<style>
+/* Estilos personalizados para los botones del calendario */
+.fc-button {
+    @apply transition-all duration-200 ease-in-out;
+}
+
+.fc-button:hover {
+    @apply transform scale-105 shadow-md;
+}
+
+.fc-button-primary {
+    @apply bg-blue-600 hover:bg-blue-700 border-blue-600 hover:border-blue-700;
+}
+
+.fc-button-primary:focus {
+    @apply ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Mejorar apariencia de los botones personalizados */
+.fc-button-group .fc-button {
+    @apply border-gray-300 hover:border-gray-400;
+}
+
+/* Estilos para los menús dropdown */
+.fc-viewmenu, .fc-locationmenu {
+    @apply backdrop-blur-sm;
+}
+
+.fc-viewmenu button:hover, .fc-locationmenu button:hover {
+    @apply transform scale-102;
+}
+
+/* Animación suave para los menús */
+.fc-viewmenu, .fc-locationmenu {
+    animation: fadeInDown 0.2s ease-out;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Mejorar el botón de "Hoy" */
+.fc-today-button {
+    @apply bg-green-600 hover:bg-green-700 border-green-600 hover:border-green-700 text-white;
+}
+
+/* Mejorar los botones de navegación */
+.fc-prev-button, .fc-next-button {
+    @apply bg-gray-600 hover:bg-gray-700 border-gray-600 hover:border-gray-700 text-white;
+}
+</style>
 @endpush
 
 @push('scripts')

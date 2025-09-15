@@ -1,4 +1,6 @@
 <?php
+use Google\Service\Calendar as GoogleCalendar;
+use Google\Service\Oauth2 as GoogleOauth2;
 return [
 
     /*
@@ -39,7 +41,20 @@ return [
     'client_id' => env('GOOGLE_CLIENT_ID'),
     'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     'redirect' => env('GOOGLE_REDIRECT_URI'),
+
+    // 👇 estos valores extra son los que usa tu GoogleController@auth
+    'scopes' => [
+        GoogleCalendar::CALENDAR,
+        GoogleOauth2::USERINFO_EMAIL,
+        GoogleOauth2::USERINFO_PROFILE,
+    ],
+    'access_type' => 'offline',
+    'prompt' => 'consent',
+    'include_granted_scopes' => true,
 ],
+
+
+
 
 
 

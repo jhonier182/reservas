@@ -10,9 +10,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">
-                        @can('update', $reservation)
-                        <a href="{{ route('reservations.edit', $reservation) }}" class="btn-primary">Editar Reserva</a>
-                        @endcan
+                        Editar Reserva
                     </h1>
                     <p class="mt-2 text-gray-600">
                         Modifica los detalles de tu reserva
@@ -32,17 +30,21 @@
 
     <!-- Formulario de Edición -->
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <form action="{{ route('reservations.update', $reservation) }}" method="POST" class="space-y-6">
                 @csrf
                 @method('PUT')
-                
+
                 <!-- Título -->
                 <div>
                     <label for="title" class="form-label">Título de la Reserva *</label>
-                    <input type="text" id="title" name="title" value="{{ old('title', $reservation->title) }}" 
+                    <input type="text" 
+                           id="title" 
+                           name="title" 
+                           value="{{ old('title', $reservation->title) }}"
                            class="form-input @error('title') border-red-500 @enderror" 
-                           placeholder="Ej: Reunión de equipo" required>
+                           placeholder="Ej: Reunión de equipo"
+                           required>
                     @error('title')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -66,95 +68,112 @@
                 <!-- Descripción -->
                 <div>
                     <label for="description" class="form-label">Descripción</label>
-                    <textarea id="description" name="description" rows="4" 
-                              class="form-input @error('description') border-red-500 @enderror" 
-                              placeholder="Describe los detalles de tu reserva">{{ old('description', $reservation->description) }}</textarea>
+                    <textarea id="description" 
+                              name="description" 
+                              rows="3"
+                              class="form-textarea @error('description') border-red-500 @enderror" 
+                              placeholder="Detalles adicionales de la reserva">{{ old('description', $reservation->description) }}</textarea>
                     @error('description')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <!-- Fechas -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="start_date" class="form-label">Fecha y Hora de Inicio *</label>
-                        <div class="relative">
-                            <input type="text" id="start_date" name="start_date" 
-                                   value="{{ old('start_date', \Carbon\Carbon::parse($reservation->start_date)->format('Y-m-d\\TH:i')) }}" 
-                                   placeholder="YYYY-MM-DD HH:MM"
-                                   class="form-input pr-12 @error('start_date') border-red-500 @enderror" step="900" required>
-                            <button type="button" id="start_date_trigger" 
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
-                                <i class="fa-solid fa-calendar-days"></i>
-                            </button>
-                        </div>
-                        @error('start_date')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label for="end_date" class="form-label">Fecha y Hora de Fin *</label>
-                        <div class="relative">
-                            <input type="text" id="end_date" name="end_date" 
-                                   value="{{ old('end_date', \Carbon\Carbon::parse($reservation->end_date)->format('Y-m-d\\TH:i')) }}" 
-                                   placeholder="YYYY-MM-DD HH:MM"
-                                   class="form-input pr-12 @error('end_date') border-red-500 @enderror" step="900" required>
-                            <button type="button" id="end_date_trigger" 
-                                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700">
-                                <i class="fa-solid fa-calendar-days"></i>
-                            </button>
-                        </div>
-                        @error('end_date')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </div>
+                <!-- Fecha y Hora de Inicio -->
+                <div>
+                    <label for="start_date" class="form-label">Fecha y Hora de Inicio *</label>
+                    <input type="text"
+                           id="start_date"
+                           name="start_date"
+                           value="{{ old('start_date', \Carbon\Carbon::parse($reservation->start_date)->format('Y-m-d H:i')) }}"
+                           class="form-input @error('start_date') border-red-500 @enderror"
+                           placeholder="YYYY-MM-DD HH:MM"
+                           required>
+                    @error('start_date')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
-                <!-- Tipo y Ubicación -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label for="type" class="form-label">Tipo de Reserva *</label>
-                        <select id="type" name="type" class="form-input @error('type') border-red-500 @enderror" required>
-                            <option value="">Seleccionar tipo</option>
-                            <option value="meeting" {{ old('type', $reservation->type) === 'meeting' ? 'selected' : '' }}>Reunión</option>
-                            <option value="event" {{ old('type', $reservation->type) === 'event' ? 'selected' : '' }}>Evento</option>
-                            <option value="appointment" {{ old('type', $reservation->type) === 'appointment' ? 'selected' : '' }}>Cita</option>
-                            <option value="other" {{ old('type', $reservation->type) === 'other' ? 'selected' : '' }}>Otro</option>
-                        </select>
-                        @error('type')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                        <div>
-                            <label for="squad" class="form-label">Escuadrón *</label>
-                            <select id="squad" name="squad" class="form-input @error('squad') border-red-500 @enderror" required>
-                                <option value="">Seleccionar escuadrón</option>
-                                <option value="design" {{ old('squad', $reservation->squad) === 'design' ? 'selected' : '' }}>Diseño</option>
-                                <option value="budget" {{ old('squad', $reservation->squad) === 'budget' ? 'selected' : '' }}>Presupuesto</option>
-                                <option value="development" {{ old('squad', $reservation->squad) === 'development' ? 'selected' : '' }}>Desarrollo</option>
-                                <option value="manufacturing" {{ old('squad', $reservation->squad) === 'manufacturing' ? 'selected' : '' }}>Manufactura</option>
-                                <option value="sales" {{ old('squad', $reservation->squad) === 'sales' ? 'selected' : '' }}>Ventas</option>
-                                <option value="other" {{ old('squad', $reservation->squad) === 'other' ? 'selected' : '' }}>Otro</option>
-                            </select>
-                            @error('squad')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
-                    </div>
-                    <!-- Ubicación -->
-                    <div>
-                        <label for="location" class="form-label">Ubicación *</label>
-                        <select id="location" 
-                                name="location" 
-                                class="form-select @error('location') border-red-500 @enderror" 
+                <!-- Fecha y Hora de Fin -->
+                <div>
+                    <label for="end_date" class="form-label">Fecha y Hora de Fin *</label>
+                    <input type="text"
+                           id="end_date"
+                           name="end_date"
+                           value="{{ old('end_date', \Carbon\Carbon::parse($reservation->end_date)->format('Y-m-d H:i')) }}"
+                           class="form-input @error('end_date') border-red-500 @enderror"
+                           placeholder="YYYY-MM-DD HH:MM"
+                           required>
+                    @error('end_date')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Ubicación -->
+                <div>
+                    <label for="location" class="form-label">Ubicación *</label>
+                    <div class="relative">
+                        <select id="location" name="location"
+                                class="form-select appearance-none bg-white hover:bg-gray-50 focus:bg-white cursor-pointer transition-colors duration-200 @error('location') border-red-500 @enderror"
                                 required>
                             <option value="">Selecciona una ubicación</option>
-                            <option value="jardin" {{ old('location', $reservation->location) == 'jardin' ? 'selected' : '' }}>Jardín</option>
-                            <option value="casino" {{ old('location', $reservation->location) == 'casino' ? 'selected' : '' }}>Casino</option>
+                            <option value="jardin" {{ old('location', $reservation->location) == 'jardin' ? 'selected' : '' }}> Jardín</option>
+                            <option value="casino" {{ old('location', $reservation->location) == 'casino' ? 'selected' : '' }}> Casino</option>
                         </select>
-                        @error('location')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                        @enderror
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200 group-hover:text-gray-600"></i>
+                        </div>
                     </div>
+                    @error('location')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Escuadrón -->
+                <div>
+                    <label for="squad" class="form-label">Escuadrón *</label>
+                    <div class="relative">
+                        <select id="squad" name="squad" class="form-select appearance-none bg-white hover:bg-gray-50 focus:bg-white cursor-pointer transition-colors duration-200 @error('squad') border-red-500 @enderror" required>
+                            <option value="">Seleccionar escuadrón</option>
+                            <option value="design" {{ old('squad', $reservation->squad) === 'design' ? 'selected' : '' }}> Design</option>
+                            <option value="estimation" {{ old('squad', $reservation->squad) === 'estimation' ? 'selected' : '' }}> Estimation</option>
+                            <option value="development" {{ old('squad', $reservation->squad) === 'development' ? 'selected' : '' }}> Product Development</option>
+                            <option value="manufacturing" {{ old('squad', $reservation->squad) === 'manufacturing' ? 'selected' : '' }}> Manufactura</option>
+                            <option value="quality" {{ old('squad', $reservation->squad) === 'quality' ? 'selected' : '' }}> Quality</option>
+                            <option value="finance" {{ old('squad', $reservation->squad) === 'finance' ? 'selected' : '' }}> Finance</option>
+                            <option value="it" {{ old('squad', $reservation->squad) === 'it' ? 'selected' : '' }}> IT</option>
+                            <option value="brand" {{ old('squad', $reservation->squad) === 'brand' ? 'selected' : '' }}> Brand & Co</option>
+                            <option value="supply" {{ old('squad', $reservation->squad) === 'supply' ? 'selected' : '' }}> Supply Chain</option>
+                            <option value="people" {{ old('squad', $reservation->squad) === 'people' ? 'selected' : '' }}> People</option>
+                            <option value="Maestro" {{ old('squad', $reservation->squad) === 'Maestro' ? 'selected' : '' }}> Maestro</option>
+                            
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200 group-hover:text-gray-600"></i>
+                        </div>
+                    </div>
+                    @error('squad')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Tipo de Reserva -->
+                <div>
+                    <label for="type" class="form-label">Tipo de Reserva *</label>
+                    <div class="relative">
+                        <select id="type" name="type"
+                                class="form-select appearance-none bg-white hover:bg-gray-50 focus:bg-white cursor-pointer transition-colors duration-200 @error('type') border-red-500 @enderror"
+                                required>
+                            <option value="">Selecciona un tipo</option>
+                            <option value="meeting" {{ old('type', $reservation->type)=='meeting' ? 'selected' : '' }}> Reunión</option>
+                            <option value="event" {{ old('type', $reservation->type)=='event' ? 'selected' : '' }}> Evento</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200 group-hover:text-gray-600"></i>
+                        </div>
+                    </div>
+                    @error('type')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <!-- Número de Personas -->
@@ -166,8 +185,8 @@
                            value="{{ old('people_count', $reservation->people_count ?? 1) }}"
                            class="form-input @error('people_count') border-red-500 @enderror" 
                            placeholder="Número de personas que asistirán"
-                           min="1"
-                           max="50"
+                           min="1" step="1"
+                           max="100"
                            required>
                     @error('people_count')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -177,12 +196,17 @@
                 <!-- Estado -->
                 <div>
                     <label for="status" class="form-label">Estado</label>
-                    <select id="status" name="status" class="form-input @error('status') border-red-500 @enderror">
-                        <option value="pending" {{ old('status', $reservation->status) === 'pending' ? 'selected' : '' }}>Pendiente</option>
-                        <option value="confirmed" {{ old('status', $reservation->status) === 'confirmed' ? 'selected' : '' }}>Confirmado</option>
-                        <option value="completed" {{ old('status', $reservation->status) === 'completed' ? 'selected' : '' }}>Completado</option>
-                        <option value="cancelled" {{ old('status', $reservation->status) === 'cancelled' ? 'selected' : '' }}>Cancelado</option>
-                    </select>
+                    <div class="relative">
+                        <select id="status" name="status" class="form-select appearance-none bg-white hover:bg-gray-50 focus:bg-white cursor-pointer transition-colors duration-200 @error('status') border-red-500 @enderror">
+                            <option value="pending" {{ old('status', $reservation->status) === 'pending' ? 'selected' : '' }}>Pendiente</option>
+                            <option value="confirmed" {{ old('status', $reservation->status) === 'confirmed' ? 'selected' : '' }}>Confirmado</option>
+                            <option value="completed" {{ old('status', $reservation->status) === 'completed' ? 'selected' : '' }}>Completado</option>
+                            <option value="cancelled" {{ old('status', $reservation->status) === 'cancelled' ? 'selected' : '' }}>Cancelado</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <i class="fas fa-chevron-down text-gray-400 transition-transform duration-200 group-hover:text-gray-600"></i>
+                        </div>
+                    </div>
                     @error('status')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
@@ -205,57 +229,83 @@
 
 @push('scripts')
 <script>
-    // Validación de fechas en el cliente
     document.addEventListener('DOMContentLoaded', function() {
         // Flatpickr para fecha/hora con minutos 00, 15, 30, 45
         if (window.flatpickr) {
             const startPicker = flatpickr('#start_date', {
                 enableTime: true,
-                time_24hr: true,
+                time_24hr: false,
                 minuteIncrement: 15,
-                dateFormat: 'Y-m-d H:i'
+                dateFormat: 'Y-m-d H:i',
+                locale: 'es',
+                onChange: function(selectedDates, dateStr, instance) {
+                    // Asegurar redondeo visual si usuario escribe manualmente
+                    if (selectedDates[0]) {
+                        const d = selectedDates[0];
+                        const m = d.getMinutes();
+                        const r = m % 15;
+                        if (r !== 0) {
+                            if (r < 8) d.setMinutes(m - r); else d.setMinutes(m + (15 - r));
+                            d.setSeconds(0);
+                            
+                            instance.setDate(d, true);
+                        }
+                    }
+                }
             });
+            
             const endPicker = flatpickr('#end_date', {
                 enableTime: true,
-                time_24hr: true,
+                time_24hr: false,
                 minuteIncrement: 15,
-                dateFormat: 'Y-m-d H:i'
-            });
-            const startTrigger = document.getElementById('start_date_trigger');
-            const endTrigger = document.getElementById('end_date_trigger');
-            if (startTrigger) startTrigger.addEventListener('click', () => startPicker.open());
-            if (endTrigger) endTrigger.addEventListener('click', () => endPicker.open());
-        }
-        const startDateInput = document.getElementById('start_date');
-        const endDateInput = document.getElementById('end_date');
-        
-        function validateDates() {
-            // Redondeo visual en caso de entrada manual
-            function roundToQuarter(dateObj) {
-                if (!(dateObj instanceof Date) || isNaN(dateObj)) return null;
-                const m = dateObj.getMinutes();
-                const r = m % 15;
-                if (r !== 0) {
-                    if (r < 8) dateObj.setMinutes(m - r); else dateObj.setMinutes(m + (15 - r));
-                    dateObj.setSeconds(0);
+                dateFormat: 'Y-m-d H:i',
+                locale: 'es',
+                onChange: function(selectedDates, dateStr, instance) {
+                    if (selectedDates[0]) {
+                        const d = selectedDates[0];
+                        const m = d.getMinutes();
+                        const r = m % 15;
+                        if (r !== 0) {
+                            if (r < 8) d.setMinutes(m - r); else d.setMinutes(m + (15 - r));
+                            d.setSeconds(0);
+                            instance.setDate(d, true);
+                        }
+                    }
                 }
-                return dateObj;
-            }
-            const startDate = roundToQuarter(new Date(startDateInput.value)) || new Date(startDateInput.value);
-            const endDate = roundToQuarter(new Date(endDateInput.value)) || new Date(endDateInput.value);
-            
-            if (startDate >= endDate) {
-                endDateInput.setCustomValidity('La fecha de fin debe ser posterior a la fecha de inicio');
-            } else {
-                endDateInput.setCustomValidity('');
-            }
+            });
         }
-        
-        startDateInput.addEventListener('change', validateDates);
-        endDateInput.addEventListener('change', validateDates);
-        
-        // Validar al cargar la página
-        validateDates();
+
+        // Mejorar interactividad de los comboboxes
+        const selects = document.querySelectorAll('select');
+        selects.forEach(select => {
+            const container = select.closest('.relative');
+            const chevron = container?.querySelector('.fa-chevron-down');
+            
+            if (select && container && chevron) {
+                // Agregar clase group para hover effects
+                container.classList.add('group');
+                
+                // Animación del chevron al abrir/cerrar
+                select.addEventListener('focus', () => {
+                    chevron.style.transform = 'rotate(180deg)';
+                });
+                
+                select.addEventListener('blur', () => {
+                    chevron.style.transform = 'rotate(0deg)';
+                });
+                
+                // Cambiar color del chevron al hover
+                container.addEventListener('mouseenter', () => {
+                    chevron.classList.remove('text-gray-400');
+                    chevron.classList.add('text-gray-600');
+                });
+                
+                container.addEventListener('mouseleave', () => {
+                    chevron.classList.remove('text-gray-600');
+                    chevron.classList.add('text-gray-400');
+                });
+            }
+        });
     });
 </script>
 @endpush

@@ -1,13 +1,17 @@
 <?php
-
 return [
-    'credentials_path' => env('GOOGLE_CREDENTIALS_PATH', storage_path('app/google/credentials.json')),
-    'redirect_uri' => env('GOOGLE_REDIRECT_URI', 'http://127.0.0.1:8000/google/callback'),
-    'scopes' => [
-        'https://www.googleapis.com/auth/calendar.events'
+    'credentials_path'        => env('GOOGLE_CREDENTIALS_PATH'), // opcional (Service Account). Déjalo vacío si usas solo OAuth
+    'redirect_uri'            => env('GOOGLE_REDIRECT_URI'),
+    'scopes'                  => [
+        'https://www.googleapis.com/auth/calendar.events',
+        // 'https://www.googleapis.com/auth/calendar', // si quieres crear Meet
     ],
-    'impersonate_subject' => env('GOOGLE_IMPERSONATE_SUBJECT', null),
-    'access_type' => 'offline',
-    'prompt' => 'consent',
-    'include_granted_scopes' => true,
+    'access_type'             => 'offline',
+    'prompt'                  => 'consent',
+    'include_granted_scopes'  => true,
+    'impersonate_subject'     => env('GOOGLE_IMPERSONATE_SUBJECT'), // opcional
+
+    'calendar_id'             => env('GOOGLE_CALENDAR_ID', 'primary'),
+    'timezone'                => env('GOOGLE_TIMEZONE', 'America/Bogota'),
 ];
+

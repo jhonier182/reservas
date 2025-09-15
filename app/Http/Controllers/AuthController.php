@@ -50,7 +50,7 @@ class AuthController extends Controller
             $email = $googleUser->email;
 
             // Validar dominio
-            $allowedDomains = config('admin.allowed_domains', ['@beltcolombia.com', '@belt.com.co', '@beltforge.com', '@belforge.com']);
+            $allowedDomains = config('admin.allowed_domains', ['@beltcolombia.com', '@belt.com.co', '@beltforge.com']);
             $isAllowed = false;
             foreach ($allowedDomains as $domain) {
                 if (str_ends_with($email, $domain)) {
@@ -76,9 +76,9 @@ class AuthController extends Controller
                 ]
             );
             
-            // Si es el correo específico del admin, asignar rol de admin
-            $adminEmails = config('admin.admin_emails', ['admin@tuapp.com']);
-            if (in_array($email, $adminEmails)) {
+            // Si es un correo listado como admin en config/admin.php, asignar rol de admin
+            $adminEmails = array_map('strtolower', config('admin.emails', []));
+            if (in_array(strtolower($email), $adminEmails)) {
                 $user->update(['role' => 'admin']);
                 \Log::info('Usuario admin asignado: ' . $email);
             }
@@ -117,6 +117,24 @@ class AuthController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
+
+        $email = $credentials['email'];
+
+        // Validar dominio permitido
+        $allowedDomains = config('admin.allowed_domains', ['@beltcolombia.com', '@belt.com.co', '@beltforge.com']);
+        $isAllowed = false;
+        foreach ($allowedDomains as $domain) {
+            if (str_ends_with($email, $domain)) {
+                $isAllowed = true;
+                break;
+            }
+        }
+        
+        if (!$isAllowed) {
+            return back()->withErrors([
+                'email' => 'Solo se permiten usuarios con dominios autorizados.',
+            ])->withInput($request->only('email'));
+        }
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();

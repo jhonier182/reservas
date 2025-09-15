@@ -43,35 +43,68 @@
             <div class="lg:col-span-3 space-y-6">
                 <!-- Filtros y Búsqueda -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <div class="flex flex-col sm:flex-row gap-4">
-                        <div class="flex-1">
-                            <input type="text" 
-                                   placeholder="Buscar reservas..." 
-                                   class="form-input w-full"
-                                   id="searchInput">
+                    <form method="GET" action="{{ route('reservations.index') }}" id="filterForm">
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <div class="flex-1">
+                                <input type="text" 
+                                       name="search"
+                                       placeholder="Buscar reservas..." 
+                                       class="form-input w-full"
+                                       id="searchInput"
+                                       value="{{ $search ?? '' }}">
+                            </div>
+                            <div class="flex gap-3">
+                                <select class="form-select" name="status" id="statusFilter">
+                                    <option value="">Todos los estados</option>
+                                    <option value="pending" {{ ($status ?? '') === 'pending' ? 'selected' : '' }}> Pendiente</option>
+                                    <option value="confirmed" {{ ($status ?? '') === 'confirmed' ? 'selected' : '' }}> Confirmado</option>
+                                    <option value="completed" {{ ($status ?? '') === 'completed' ? 'selected' : '' }}> Completado</option>
+                                    <option value="cancelled" {{ ($status ?? '') === 'cancelled' ? 'selected' : '' }}> Cancelado</option>
+                                </select>
+                                <select class="form-select" name="type" id="typeFilter">
+                                    <option value="">Todos los tipos</option>
+                                    <option value="meeting" {{ ($type ?? '') === 'meeting' ? 'selected' : '' }}> Reunión</option>
+                                    <option value="event" {{ ($type ?? '') === 'event' ? 'selected' : '' }}> Evento</option>
+                                </select>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-search mr-2"></i>Filtrar
+                                </button>
+                                @if($search || $status || $type)
+                                    <a href="{{ route('reservations.index') }}" class="btn-secondary">
+                                        <i class="fas fa-times mr-2"></i>Limpiar
+                                    </a>
+                                @endif
+                            </div>
                         </div>
-                        <div class="flex gap-3">
-                            <select class="form-select" id="statusFilter">
-                                <option value="">Todos los estados</option>
-                                <option value="pending">Pendiente</option>
-                                <option value="confirmed">Confirmado</option>
-                                <option value="completed">Completado</option>
-                                <option value="cancelled">Cancelado</option>
-                            </select>
-                            <select class="form-select" id="typeFilter">
-                                <option value="">Todos los tipos</option>
-                                <option value="meeting">Reunión</option>
-                                <option value="event">Evento</option>
-                                <option value="appointment">Cita</option>
-                                <option value="other">Otro</option>
-                            </select>
-                        </div>
-                    </div>
+                    </form>
                 </div>
 
                 <!-- Lista de Reservas -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-6">Reservas Recientes</h3>
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-lg font-semibold text-gray-900">Reservas Recientes</h3>
+                        @if($search || $status || $type)
+                            <div class="flex items-center space-x-2 text-sm text-gray-600">
+                                <i class="fas fa-filter"></i>
+                                <span>Filtros activos:</span>
+                                @if($search)
+                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
+                                        Búsqueda: "{{ $search }}"
+                                    </span>
+                                @endif
+                                @if($status)
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                                        Estado: {{ ucfirst($status) }}
+                                    </span>
+                                @endif
+                                @if($type)
+                                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">
+                                        Tipo: {{ ucfirst($type) }}
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
                     
                     @if(isset($reservations) && $reservations->count() > 0)
                         <div class="space-y-4">
@@ -126,9 +159,9 @@
                                                         <i class="fas fa-map-marker-alt"></i>
                                                         <span>
                                                             @if($reservation->location === 'jardin')
-                                                                🌿 Jardín
+                                                                 Jardín
                                                             @elseif($reservation->location === 'casino')
-                                                                🎰 Casino
+                                                                 Casino
                                                             @else
                                                                 {{ ucfirst($reservation->location) }}
                                                             @endif
@@ -229,27 +262,31 @@
 
 @push('scripts')
 <script>
-    // Filtros de búsqueda
-    document.getElementById('searchInput').addEventListener('input', function() {
-        filterReservations();
-    });
-
+    // Auto-submit del formulario cuando cambian los filtros
     document.getElementById('statusFilter').addEventListener('change', function() {
-        filterReservations();
+        document.getElementById('filterForm').submit();
     });
 
     document.getElementById('typeFilter').addEventListener('change', function() {
-        filterReservations();
+        document.getElementById('filterForm').submit();
     });
 
-    function filterReservations() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const statusFilter = document.getElementById('statusFilter').value;
-        const typeFilter = document.getElementById('typeFilter').value;
-        
-        // Aquí iría la lógica de filtrado
-        console.log('Filtros aplicados:', { searchTerm, statusFilter, typeFilter });
-    }
+    // Debounce para la búsqueda (esperar 500ms después de que el usuario deje de escribir)
+    let searchTimeout;
+    document.getElementById('searchInput').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            document.getElementById('filterForm').submit();
+        }, 500);
+    });
+
+    // Submit inmediato al presionar Enter en el campo de búsqueda
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            clearTimeout(searchTimeout);
+            document.getElementById('filterForm').submit();
+        }
+    });
 </script>
 @endpush
 @endsection

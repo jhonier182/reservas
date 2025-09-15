@@ -9,23 +9,20 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AdminMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle(Request $request, Closure $next)
+    public function handle($request, Closure $next)
     {
-        $user = $request->user();
+        $user = Auth::user();
+        if (!$user) return redirect()->route('login');
 
-        // Ajusta esta condición a tu implementación de roles
-        if (!$user || ($user->role ?? null) !== 'admin') {
-            if ($request->expectsJson()) {
-                return response()->json(['message' => 'No tienes permisos de administrador.'], 403);
-            }
-            abort(403, 'No tienes permisos de administrador.');
+        $adminEmails = array_map('strtolower', config('admin.emails', []));
+        $isAdminEmail = in_array(strtolower($user->email), $adminEmails);
+        $isAdminRole  = ($user->role ?? null) === 'admin';
+
+        if (!($isAdminEmail || $isAdminRole)) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Forbidden'], 403)
+                : redirect()->route('no-autorizado');
         }
-
         return $next($request);
     }
 }

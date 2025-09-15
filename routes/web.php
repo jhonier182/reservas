@@ -29,6 +29,9 @@ Route::prefix('auth')->name('auth.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
+// Login tradicional
+Route::post('/login', [AuthController::class, 'login'])->name('login');
+
 // Rutas protegidas por autenticación
 Route::middleware('auth')->group(function () {
     
@@ -54,7 +57,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/calendar/events', [GoogleController::class, 'getCalendarEvents'])->name('calendar.events');
     });
     
-        // Web (sesiones)
+        // Web (sesiones) admin
     Route::middleware(['auth', 'admin'])->group(function () {
         Route::get('/admin/reservas', [ReservationController::class, 'index']);
     });
@@ -63,6 +66,8 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['auth:sanctum', 'admin'])->group(function () {
         Route::get('/api/admin/reservas', [ReservationController::class, 'index']);
     });
+
+    
     
     // Revocar acceso de Google
     Route::post('/revoke-google-access', [AuthController::class, 'revokeGoogleAccess'])->name('revoke.google.access');

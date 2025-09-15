@@ -7,9 +7,18 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Collection;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use App\Services\GoogleCalendarService;
 
 class ReservationService
 {
+    protected GoogleCalendarService $googleCalendarService;
+
+    public function __construct(GoogleCalendarService $googleCalendarService)
+    {
+        $this->googleCalendarService = $googleCalendarService;
+    }
+
     /**
      * Crear una nueva reserva
      */
@@ -22,10 +31,10 @@ class ReservationService
 
         return DB::transaction(function () use ($data) {
             $reservation = Reservation::create($data);
-            
-            // Aquí se podría disparar un evento ReservationCreated
-            // event(new ReservationCreated($reservation));
-            
+
+            // Sincronizar con Google Calendar
+            $this->syncToGoogleCalendar($reservation);
+
             return $reservation;
         });
     }
@@ -40,7 +49,7 @@ class ReservationService
             $startDate = $data['start_date'] ?? $reservation->start_date;
             $endDate = $data['end_date'] ?? $reservation->end_date;
             $location = $data['location'] ?? $reservation->location;
-            
+
             if (!$this->checkAvailability($startDate, $endDate, $location, $reservation->id)) {
                 throw new \Exception('No hay disponibilidad para el nuevo horario y ubicación');
             }
@@ -48,10 +57,12 @@ class ReservationService
 
         return DB::transaction(function () use ($reservation, $data) {
             $result = $reservation->update($data);
-            
-            // Aquí se podría disparar un evento ReservationUpdated
-            // event(new ReservationUpdated($reservation));
-            
+
+            // Sincronizar con Google Calendar
+            if ($result) {
+                $this->syncToGoogleCalendar($reservation, true);
+            }
+
             return $result;
         });
     }
@@ -62,9 +73,9 @@ class ReservationService
     public function deleteReservation(Reservation $reservation): bool
     {
         return DB::transaction(function () use ($reservation) {
-            // Aquí se podría disparar un evento ReservationCancelled
-            // event(new ReservationCancelled($reservation));
-            
+            // Eliminar de Google Calendar
+            $this->removeFromGoogleCalendar($reservation);
+
             return $reservation->delete();
         });
     }
@@ -164,5 +175,121 @@ class ReservationService
             })
             ->orderBy('start_date')
             ->get();
+    }
+
+    /**
+     * Sincronizar reserva con Google Calendar
+     */
+    private function syncToGoogleCalendar(Reservation $reservation, bool $isUpdate = false): void
+    {
+        try {
+            // Asegurar que la relación user esté cargada
+            $reservation->load('user');
+            $user = $reservation->user;
+
+            if (!$user || !$user->email) {
+                Log::warning("No se puede sincronizar reserva {$reservation->id}: usuario sin email");
+                return;
+            }
+
+            // Verificar si el usuario tiene tokens de Google Calendar en DB
+            if (empty($user->google_access_token)) {
+                Log::info("Usuario {$user->email} no tiene token de Google Calendar configurado (access_token vacío)");
+                return;
+            }
+
+            // Preparar datos del evento
+            $eventData = [
+                'summary' => $reservation->title,
+                'description' => $this->buildEventDescription($reservation),
+                'start' => Carbon::parse($reservation->start_date),
+                'end' => Carbon::parse($reservation->end_date),
+                'location' => $this->getLocationName($reservation->location),
+                'attendees' => $reservation->usuario_email ? [['email' => $reservation->usuario_email]] : [],
+            ];
+
+            if ($isUpdate && $reservation->google_event_id) {
+                // Actualizar evento existente
+                $this->googleCalendarService->updateEvent($user->email, $reservation->google_event_id, $eventData);
+                Log::info("Evento de Google Calendar actualizado para reserva {$reservation->id}");
+            } else {
+                // Crear nuevo evento
+                $googleEventId = $this->googleCalendarService->createEvent($user->email, $eventData);
+
+                // Guardar el ID del evento de Google en la reserva
+                if ($googleEventId) {
+                    $reservation->update(['google_event_id' => $googleEventId]);
+                }
+
+                Log::info("Evento de Google Calendar creado para reserva {$reservation->id}: {$googleEventId}");
+            }
+
+        } catch (\Exception $e) {
+            Log::error("Error sincronizando reserva {$reservation->id} con Google Calendar: " . $e->getMessage());
+            // No lanzar la excepción para no interrumpir el flujo principal
+        }
+    }
+
+    /**
+     * Eliminar evento de Google Calendar
+     */
+    private function removeFromGoogleCalendar(Reservation $reservation): void
+    {
+        try {
+            if (!$reservation->google_event_id) {
+                return;
+            }
+
+            $user = $reservation->user;
+            if (!$user || !$user->email) {
+                return;
+            }
+
+            $this->googleCalendarService->deleteEvent($user->email, $reservation->google_event_id);
+            Log::info("Evento de Google Calendar eliminado para reserva {$reservation->id}");
+
+        } catch (\Exception $e) {
+            Log::error("Error eliminando evento de Google Calendar para reserva {$reservation->id}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Construir descripción del evento
+     */
+    private function buildEventDescription(Reservation $reservation): string
+    {
+        $description = $reservation->description ?? '';
+
+        $details = [];
+        if ($reservation->responsible_name) {
+            $details[] = "Responsable: {$reservation->responsible_name}";
+        }
+        if ($reservation->people_count) {
+            $details[] = "Personas: {$reservation->people_count}";
+        }
+        if ($reservation->squad) {
+            $details[] = "Equipo: {$reservation->squad}";
+        }
+        if ($reservation->type) {
+            $details[] = "Tipo: " . ucfirst($reservation->type);
+        }
+
+        if (!empty($details)) {
+            $description .= "\n\n" . implode("\n", $details);
+        }
+
+        return $description;
+    }
+
+    /**
+     * Obtener nombre de la ubicación
+     */
+    private function getLocationName(string $location): string
+    {
+        return match($location) {
+            'jardin' => 'Jardín',
+            'casino' => 'Casino',
+            default => ucfirst($location)
+        };
     }
 }

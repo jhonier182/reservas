@@ -22,7 +22,8 @@ class Reservation extends Model
         'metadata',
         'people_count',
         'responsible_name',
-        'squad'
+        'squad',
+        'google_event_id'
     ];
 
     protected $casts = [
@@ -93,6 +94,16 @@ class Reservation extends Model
     public function getIsPastAttribute(): bool
     {
         return $this->end_date->isPast();
+    }
+
+    public function getUsuarioEmailAttribute(): string
+    {
+        try {
+            return $this->user->email ?? '';
+        } catch (\Exception $e) {
+            \Log::warning("Error accediendo a usuario_email para reserva {$this->id}: " . $e->getMessage());
+            return '';
+        }
     }
 
     // Métodos

@@ -12,19 +12,27 @@ use App\Services\NotificationService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
+use App\Services\GoogleCalendarService;
 
 class ReservationController extends Controller
 {
     protected ReservationService $reservationService;
     protected NotificationService $notificationService;
 
-    public function __construct(ReservationService $reservationService, NotificationService $notificationService)
-    {
+    protected GoogleCalendarService $calendarService; //agg google calendar
+
+    public function __construct(
+        ReservationService $reservationService, 
+        NotificationService $notificationService,
+        GoogleCalendarService $calendarService
+    ) {
         $this->reservationService = $reservationService;
         $this->notificationService = $notificationService;
-        $this->middleware('auth'); // si requieres login
+        $this->calendarService = $calendarService;
+
+        $this->middleware('auth'); 
         $this->authorizeResource(\App\Models\Reservation::class, 'reservation');
-    }
+    }//lo cambie para agg google calendar
 
     /**
      * Redondea una fecha/hora al múltiplo de 15 minutos más cercano.
@@ -54,19 +62,38 @@ class ReservationController extends Controller
         $status = $request->get('status');
         $type = $request->get('type');
 
-        $reservations = $this->reservationService->getUserReservations($user);
-        
+        // Construir la consulta base
+        $query = Reservation::with('user');
+
+        // Si es administrador, mostrar todas las reservas; si no, solo las suyas
+        if (!$user->isAdmin()) {
+            $query->where('user_id', $user->id);
+        }
+
+        // Aplicar filtros de búsqueda
         if ($search) {
-            $reservations = $this->reservationService->searchReservations($user, $search);
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhere('location', 'like', "%{$search}%")
+                  ->orWhereHas('user', function ($userQuery) use ($search) {
+                      $userQuery->where('name', 'like', "%{$search}%");
+                  });
+            });
         }
 
+        // Aplicar filtro de estado
         if ($status) {
-            $reservations = $reservations->where('status', $status);
+            $query->where('status', $status);
         }
 
+        // Aplicar filtro de tipo
         if ($type) {
-            $reservations = $reservations->where('type', $type);
+            $query->where('type', $type);
         }
+
+        // Ordenar y obtener resultados
+        $reservations = $query->orderBy('start_date', 'desc')->get();
 
         $stats = $this->reservationService->getReservationStats($user);
 
@@ -76,61 +103,82 @@ class ReservationController extends Controller
     
     public function getAllReservations(Request $request): JsonResponse
     {
-        $start = \Carbon\Carbon::parse($request->query('start_date', now()->startOfMonth()));
-        $end   = \Carbon\Carbon::parse($request->query('end_date',   now()->endOfMonth()));
-        $loc   = $request->query('location'); // 'jardin' | 'casino' | null
-    
-        $user = \Illuminate\Support\Facades\Auth::user();
-    
-        // 👇 Usa los nombres reales de tus columnas
-        $reservas = \App\Models\Reservation::query()
-            ->whereBetween('start_date', [$start, $end])
-            ->when($loc, fn($q) => $q->where('location', $loc))
-            ->orderBy('start_date', 'asc')
-            ->get();
-    
-        $eventos = $reservas->map(function ($r) use ($user) {
+        try {
+            $start = \Carbon\Carbon::parse($request->query('start_date', now()->startOfMonth()));
+            $end   = \Carbon\Carbon::parse($request->query('end_date',   now()->endOfMonth()));
+            $loc   = $request->query('location'); // 'jardin' | 'casino' | null
+            $search = $request->query('search');
+            $status = $request->query('status');   // pending | confirmed | completed | cancelled
+            $type   = $request->query('type');     // meeting | event | appointment | other
+        
+        
+            $user = \Illuminate\Support\Facades\Auth::user();
+
             
-    
-            $isAdmin = $user && ($user->role === 'admin');  // o $user->isAdmin()
-            $isOwner = $user && (intval($r->user_id) === intval($user->id));
-            $canEdit = $isAdmin || $isOwner;
-    
-            return [
-                'id'    => $r->id,
-                'title' => $r->title, // 👈 title (no titulo)
-                'start' => \Carbon\Carbon::parse($r->start_date)->timezone('America/Bogota')->format('Y-m-d\TH:i:s'),
-                'end'   => \Carbon\Carbon::parse($r->end_date)->timezone('America/Bogota')->format('Y-m-d\TH:i:s'),
-    
-                'backgroundColor' => '#10B981',
-                'borderColor'     => '#059669',
-                'textColor'       => '#FFFFFF',
-    
-                // Permisos por evento
-                'editable'         => $canEdit,
-                'startEditable'    => $canEdit,
-                'durationEditable' => $canEdit,
-    
-                'extendedProps' => [
-                    'type'        => 'local_reservation',
-                    'description' => $r->description, // 👈 description (no descripcion)
-                    'location'    => $r->location,    // 👈 location (no ubicacion)
-                    'responsible' => $r->responsible_name,        // 👈 responsable
-                    'people' => (int) ($r->people_count ?? 0),// 👈 asistentes/cupo
-                    'ownerId'     => $r->user_id,
-                    'ownerEmail'  => $r->usuario_email,
-                    'canEdit'     => $canEdit,
-                    'isAdmin'     => $isAdmin,
-                    'isOwner'     => $isOwner,
-                    'squad'       => $r->squad,
-                ],
-            ];
-        })->values();
-    
-        return response()->json([
-            'success' => true,
-            'events'  => $eventos->values()
-        ]);
+        
+            // 👇 Usa los nombres reales de tus columnas
+            $reservas = \App\Models\Reservation::query()
+                ->with('user')
+                ->whereBetween('start_date', [$start, $end])
+                ->when($loc, fn($q) => $q->where('location', $loc))
+                ->orderBy('start_date', 'asc')
+                ->get();
+            $eventos = $reservas->map(function ($r) use ($user) {
+                
+        
+                $isAdmin = $user && (method_exists($user, 'isAdmin') ? $user->isAdmin() : ($user->role === 'admin'));
+                $isOwner = $user && (intval($r->user_id) === intval($user->id));
+                $canEdit = $isAdmin || $isOwner;
+
+                
+        
+                return [
+                    'id'    => $r->id,
+                    'title' => $r->title, // 👈 title (no titulo)
+                    'start' => \Carbon\Carbon::parse($r->start_date)->timezone('America/Bogota')->format('Y-m-d\TH:i:s'),
+                    'end'   => \Carbon\Carbon::parse($r->end_date)->timezone('America/Bogota')->format('Y-m-d\TH:i:s'),
+        
+                    'backgroundColor' => '#10B981',
+                    'borderColor'     => '#059669',
+                    'textColor'       => '#FFFFFF',
+        
+                    // Permisos por evento
+                    'editable'         => $canEdit,
+                    'startEditable'    => $canEdit,
+                    'durationEditable' => $canEdit,
+        
+                    'extendedProps' => [
+                        'type'        => 'local_reservation',
+                        'description' => $r->description, // 👈 description (no descripcion)
+                        'location'    => $r->location,    // 👈 location (no ubicacion)
+                        'responsible' => $r->responsible_name,        // 👈 responsable
+                        'people' => (int) ($r->people_count ?? 0),// 👈 asistentes/cupo
+                        'ownerId'     => $r->user_id,
+                        'ownerEmail'  => $r->usuario_email ?? '',
+                        'canEdit'     => $canEdit,
+                        'isAdmin'     => $isAdmin,
+                        'isOwner'     => $isOwner,
+                        'squad'       => $r->squad,
+                    ],
+                ];
+            })->values();
+        
+            return response()->json([
+                'success' => true,
+                'events'  => $eventos->values()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error en getAllReservations: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Error al cargar las reservas',
+                'events' => []
+            ], 500);
+        }
     }
     
 
@@ -215,11 +263,21 @@ class ReservationController extends Controller
             $data['responsible_name'] = Auth::user()?->name ?? 'Sistema';
     
             $reservation = $this->reservationService->createReservation($data);
+            // Cargar la relación user para poder acceder a usuario_email
+            $reservation->load('user');
+            
             $this->notificationService->sendReservationConfirmation($reservation);
+
+            
     
-            return redirect()->route('reservations.show', $reservation)
-                ->with('success', 'Reserva creada correctamente');
+            return redirect()->route('calendar')
+                ->with('success', 'Reserva creada correctamente y enviada a Google Calendar');
         } catch (\Exception $e) {
+            \Log::error('Error al crear reserva: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'user_id' => Auth::id(),
+                'data' => $data ?? null
+            ]);
             return redirect()->back()
                 ->with('error', 'Error al crear la reserva: ' . $e->getMessage())
                 ->withInput();
@@ -231,11 +289,8 @@ class ReservationController extends Controller
      */
     public function show(Reservation $reservation): View
     {
-        // Verificar que el usuario sea el propietario de la reserva
-        if ($reservation->user_id !== Auth::id()) {
-            abort(403, 'No tienes permiso para ver esta reserva.');
-        }
-        
+        // Cualquier usuario puede ver (según Policy->view). Si quieres forzar policy:
+        // $this->authorize('view', $reservation);
         return view('reservations.show', compact('reservation'));
     }
 
@@ -244,11 +299,7 @@ class ReservationController extends Controller
      */
     public function edit(Reservation $reservation): View
     {
-        // Verificar que el usuario sea el propietario de la reserva
-        if ($reservation->user_id !== Auth::id()) {
-            abort(403, 'No tienes permiso para editar esta reserva.');
-        }
-        
+        $this->authorize('update', $reservation);
         return view('reservations.edit', compact('reservation'));
     }
 
@@ -334,10 +385,7 @@ class ReservationController extends Controller
      */
     public function destroy(Reservation $reservation): RedirectResponse
     {
-        // Verificar que el usuario puede eliminar esta reserva
-        if ($reservation->user_id !== Auth::id()) {
-            return redirect()->back()->with('error', 'No tienes permisos para eliminar esta reserva');
-        }
+        $this->authorize('delete', $reservation);
 
         try {
             $this->reservationService->deleteReservation($reservation);
@@ -359,10 +407,7 @@ class ReservationController extends Controller
      */
     public function changeStatus(Request $request, Reservation $reservation): JsonResponse
     {
-        // Verificar que el usuario puede actualizar esta reserva
-        if ($reservation->user_id !== Auth::id()) {
-            return response()->json(['error' => 'No tienes permisos para actualizar esta reserva'], 403);
-        }
+        $this->authorize('update', $reservation);
 
         $validStatuses = ['pending', 'confirmed', 'cancelled', 'completed'];
         $newStatus = $request->get('status');
@@ -390,10 +435,7 @@ class ReservationController extends Controller
      */
     public function markAsCompleted(Reservation $reservation): RedirectResponse
     {
-        // Verificar que el usuario puede actualizar esta reserva
-        if ($reservation->user_id !== Auth::id()) {
-            return redirect()->back()->with('error', 'No tienes permisos para actualizar esta reserva');
-        }
+        $this->authorize('update', $reservation);
 
         try {
             $reservation->update(['status' => 'completed']);

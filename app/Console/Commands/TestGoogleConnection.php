@@ -39,22 +39,33 @@ class TestGoogleConnection extends Command
         
         $this->info('✅ Archivo de credenciales encontrado');
         
-        // Obtener usuario
-        $email = $this->argument('email');
-        if (!$email) {
-            $user = User::where('email', 'like', '%@beltcolombia.com')->first();
-            if (!$user) {
-                $this->error('❌ No se encontró usuario con dominio @beltcolombia.com');
-                return 1;
-            }
-            $email = $user->email;
-        } else {
-            $user = User::where('email', $email)->first();
-            if (!$user) {
-                $this->error('❌ Usuario no encontrado: ' . $email);
-                return 1;
-            }
+        // dominios permitidos
+$allowedDomains = ['@beltcolombia.com', '@belt.com.co', '@beltforge.com'];
+
+$email = $this->argument('email');
+
+if (!$email) {
+    // buscar primer usuario con dominio permitido
+    $user = User::where(function ($query) use ($allowedDomains) {
+        foreach ($allowedDomains as $domain) {
+            $query->orWhere('email', 'like', '%' . $domain);
         }
+    })->first();
+
+    if (!$user) {
+        $this->error('❌ No se encontró usuario con dominios permitidos: ' . implode(', ', $allowedDomains));
+        return 1;
+    }
+
+    $email = $user->email;
+} else {
+    $user = User::where('email', $email)->first();
+    if (!$user) {
+        $this->error('❌ Usuario no encontrado: ' . $email);
+        return 1;
+    }
+}
+
         
         $this->info('👤 Probando con usuario: ' . $email);
         

@@ -56,16 +56,23 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'preferences' => 'array',
+            'google_token' => 'array',
             'token_expires_at' => 'datetime'
         ];
     }
 
     // Relaciones
 
-    public function isAdmin(): bool
+    // app/Models/User.php
+public function isAdmin(): bool
 {
-    return $this->role === 'admin';
+    return ($this->role === 'admin')
+        || in_array(
+            strtolower($this->email),
+            array_map('strtolower', config('admin.emails', []))
+        );
 }
+
 
     public function reservations()
     {
