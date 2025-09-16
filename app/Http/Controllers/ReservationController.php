@@ -197,92 +197,112 @@ class ReservationController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request): RedirectResponse
-    {
-        // Redondear entradas a múltiplos de 15 antes de validar
-        if ($request->filled('start_date')) {
-            $roundedStart = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->start_date));
-            $request->merge(['start_date' => $roundedStart->format('Y-m-d H:i:s')]);
-        }
-        if ($request->filled('end_date')) {
-            $roundedEnd = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->end_date));
-            $request->merge(['end_date' => $roundedEnd->format('Y-m-d H:i:s')]);
-        }
+{
+    config(['app.timezone' => 'America/Bogota']);
 
-        $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'start_date' => 'required|date|after:now',
-            'end_date' => 'required|date',
-            'location' => 'required|in:jardin,casino',
-            'people_count' => ['required', 'integer','min:1'],
-            'type' => 'required|in:meeting,event,appointment,other',
-            'squad' => ['nullable','string','max:100'],
-        ]);
-            
-        
-        
-
-        // Validación personalizada para conflictos de ubicación y múltiplos de 15 minutos
-        $validator->after(function ($validator) use ($request) {
-            $startDate = \Carbon\Carbon::parse($request->start_date);
-            $endDate = \Carbon\Carbon::parse($request->end_date);
-            
-            // Validar múltiplos de 15 minutos
-            if ($startDate->minute % 15 !== 0) {
-                $validator->errors()->add('start_date', 'Los minutos de la fecha de inicio deben ser 00, 15, 30 o 45.');
-            }
-            if ($endDate->minute % 15 !== 0) {
-                $validator->errors()->add('end_date', 'Los minutos de la fecha de fin deben ser 00, 15, 30 o 45.');
-            }
-
-            if ($endDate->lte($startDate)) {
-                $validator->errors()->add('end_date', 'La fecha de fin debe ser posterior a la fecha de inicio.');
-            }
-
-            // Verificar si la ubicación está disponible
-            if (!\App\Models\Reservation::isLocationAvailable($request->location, $startDate, $endDate)) {
-                $validator->errors()->add('location', 'La ubicación seleccionada no está disponible en la fecha y hora especificadas.');
-            }
-        });
-
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        try {
-            $data = $request->all();
-            $data['user_id'] = Auth::id();
-    
-            // Forzar la sala si viene desde el calendario
-            $locked = $request->query('location');
-            if (in_array($locked, ['jardin','casino'], true)) {
-                $data['location'] = $locked;
-            }
-
-            // 👇 AÑADE ESTO: responsable por defecto = usuario actual
-            $data['responsible_name'] = Auth::user()?->name ?? 'Sistema';
-    
-            $reservation = $this->reservationService->createReservation($data);
-            // Cargar la relación user para poder acceder a usuario_email
-            $reservation->load('user');
-            
-            $this->notificationService->sendReservationConfirmation($reservation);
-
-            
-    
-            return redirect()->route('calendar')
-                ->with('success', 'Reserva creada correctamente y enviada a Google Calendar');
-        } catch (\Exception $e) {
-            \Log::error('Error al crear reserva: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'user_id' => Auth::id(),
-                'data' => $data ?? null
-            ]);
-            return redirect()->back()
-                ->with('error', 'Error al crear la reserva: ' . $e->getMessage())
-                ->withInput();
-        }
+    // --- Redondeo previo (tal como lo tenías) ---
+    if ($request->filled('start_date')) {
+        $roundedStart = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->start_date));
+        $request->merge(['start_date' => $roundedStart->format('Y-m-d H:i:s')]);
     }
+    if ($request->filled('end_date')) {
+        $roundedEnd = $this->roundToNearestQuarterHour(\Carbon\Carbon::parse($request->end_date));
+        $request->merge(['end_date' => $roundedEnd->format('Y-m-d H:i:s')]);
+    }
+
+    // --- Validación (igual) ---
+    $validator = Validator::make($request->all(), [
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'start_date' => 'required|date|after:now',
+        'end_date' => 'required|date',
+        'location' => 'required|in:jardin,casino',
+        'people_count' => ['required', 'integer','min:1'],
+        'type' => 'required|in:meeting,event,appointment,other',
+        'squad' => ['nullable','string','max:100'],
+    ]);
+
+    $validator->after(function ($validator) use ($request) {
+        $startDate = \Carbon\Carbon::parse($request->start_date);
+        $endDate   = \Carbon\Carbon::parse($request->end_date);
+
+        // Múltiplos de 15
+        if ($startDate->minute % 15 !== 0) {
+            $validator->errors()->add('start_date', 'Los minutos de la fecha de inicio deben ser 00, 15, 30 o 45.');
+        }
+        if ($endDate->minute % 15 !== 0) {
+            $validator->errors()->add('end_date', 'Los minutos de la fecha de fin deben ser 00, 15, 30 o 45.');
+        }
+
+        if ($endDate->lte($startDate)) {
+            $validator->errors()->add('end_date', 'La fecha de fin debe ser posterior a la fecha de inicio.');
+        }
+
+        // Disponibilidad de la ubicación
+        if (!\App\Models\Reservation::isLocationAvailable($request->location, $startDate, $endDate)) {
+            $validator->errors()->add('location', 'La ubicación seleccionada no está disponible en la fecha y hora especificadas.');
+        }
+    });
+
+    if ($validator->fails()) {
+        return redirect()->back()->withErrors($validator)->withInput();
+    }
+
+    try {
+        $data = $request->all();
+        $data['user_id'] = Auth::id();
+
+        // Forzar sala si viene desde el calendario
+        $locked = $request->query('location');
+        if (in_array($locked, ['jardin','casino'], true)) {
+            $data['location'] = $locked;
+        }
+
+        // Responsable por defecto = usuario actual
+        $data['responsible_name'] = Auth::user()?->name ?? 'Sistema';
+
+        // =========================
+        // 🚨 FIN DE SEMANA (warning)
+        // =========================
+        $startDate = \Carbon\Carbon::parse($data['start_date'])->timezone('America/Bogota');
+        $isWeekend = $startDate->isWeekend(); // sábado/domingo
+
+        // Marca el evento en la descripción que irá a Google (sin bloquear)
+        if (!empty($data['description'])) {
+            $data['description'] = ($isWeekend ? "[RESERVA FUERA DE HORARIO LABORAL: sábado/domingo]\n" : "")
+                . trim($data['description']);
+        } else {
+            $data['description'] = $isWeekend
+                ? "[RESERVA FUERA DE HORARIO LABORAL: sábado/domingo]"
+                : null;
+        }
+        // (Opcional) si quieres conservar un flag interno:
+        // $data['is_weekend'] = $isWeekend;
+        // =========================
+
+        $reservation = $this->reservationService->createReservation($data);
+
+        // Para notificación
+        $reservation->load('user');
+        $this->notificationService->sendReservationConfirmation($reservation);
+
+        // Redirige con success + warning (si aplica)
+        return redirect()->route('calendar')
+            ->with('success', 'Reserva creada correctamente y enviada a Google Calendar')
+            ->with('warning', $isWeekend ? 'Estás reservando fuera del horario laboral (sábado/domingo). La reserva fue creada.' : null);
+
+    } catch (\Exception $e) {
+        \Log::error('Error al crear reserva: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString(),
+            'user_id' => Auth::id(),
+            'data' => $data ?? null
+        ]);
+        return redirect()->back()
+            ->with('error', 'Error al crear la reserva: ' . $e->getMessage())
+            ->withInput();
+    }
+}
+
 
     /**
      * Display the specified resource.

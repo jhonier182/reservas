@@ -116,18 +116,11 @@ document.addEventListener('DOMContentLoaded', function () {
     menu.addEventListener('click', (e) => {
       const btn = e.target.closest('[data-location]');
       if (!btn) return;
-      const location = btn.dataset.location === 'all' ? null : btn.dataset.location;
-      selectedLocation = location;
-      calendar.refetchEvents();
-
-      const txt = 
-        location === null ? 'Todas las Salas' :
-        location === 'jardin' ? 'Jardín' : 'Casino';
-
-      const anchorLabel = anchorBtn.querySelector('.fc-button-label');
-      if (anchorLabel) anchorLabel.textContent = txt;
+      const loc = btn.dataset.location === 'all' ? null : btn.dataset.location;
+      setSelectedLocation(calendar, loc); // actualiza variable, refetch y etiqueta del botón
       menu.remove();
     });
+    
 
     const close = (ev) => {
       if (ev.type === 'keydown' && ev.key !== 'Escape') return;
@@ -148,11 +141,20 @@ document.addEventListener('DOMContentLoaded', function () {
     locale: 'es',
     timeZone: 'local',
     editable: true,
+    // Mostrar tiempos con AM/PM
+    eventTimeFormat: { hour: 'numeric', minute: '2-digit', hour12: true },
+    slotLabelFormat: { hour: 'numeric', minute: '2-digit', hour12: true },
+
+    datesSet() {
+      refreshViewLabel(calendar);
+      refreshLocationLabel(calendar);
+    },
+    
 
     headerToolbar: {
-      left: 'prev,next today',
+      left: 'prev next today',
       center: 'title',
-      right: 'locationFilter,viewFilter'
+      right: 'locationFilter viewFilter'
     },
 
     customButtons: {
@@ -209,7 +211,8 @@ document.addEventListener('DOMContentLoaded', function () {
       if (info.allDay) start.setHours(9, 0, 0, 0);
       start = floorQuarter(start);
 
-      const end = new Date(start.getTime()); // mismo inicio = mismo fin
+      const end = new Date(start.getTime());
+      end.setHours(end.getHours() + 1); // una hora después del inicio
 
       const params = new URLSearchParams({
         start_date: toParam(start),
@@ -272,7 +275,49 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // Mapea tipos de vista → etiqueta
+const VIEW_LABELS = {
+  dayGridMonth: 'Mes',
+  timeGridWeek: 'Semana',
+  timeGridDay:  'Día',
+  listWeek:     'Lista'
+};
+
+function refreshViewLabel(calendar) {
+  const btn = document.querySelector('.fc-viewFilter-button'); // botón custom
+  if (!btn) return;
+  const label = VIEW_LABELS[calendar.view.type] || 'Vista';
+  const labelEl = btn.querySelector('.fc-button-label') || btn;
+  labelEl.textContent = `Vista: ${label}`;
+}
+
+// Etiquetas para el botón de salas
+const LOCATION_LABELS = {
+  all: 'Todas las Salas',
+  jardin: 'Jardín',
+  casino: 'Casino'
+};
+
+function refreshLocationLabel(calendar) {
+  const btn = document.querySelector('.fc-locationFilter-button');
+  if (!btn) return;
+  const labelEl = btn.querySelector('.fc-button-label') || btn;
+  labelEl.textContent = selectedLocation ? LOCATION_LABELS[selectedLocation] : LOCATION_LABELS.all;
+}
+
+function setSelectedLocation(calendar, loc) {
+  // loc: null | 'jardin' | 'casino'
+  selectedLocation = loc;
+  calendar.refetchEvents();
+  refreshLocationLabel(calendar);
+}
+
+
+
   calendar.render();
+  refreshViewLabel(calendar);
+  refreshLocationLabel(calendar);
+
 
   // -------- Helpers --------
   function showEventDetails(data) {

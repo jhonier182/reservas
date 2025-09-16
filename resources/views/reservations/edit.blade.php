@@ -250,6 +250,21 @@
                             
                             instance.setDate(d, true);
                         }
+                        // Ajustar fin automáticamente a +1h si no es posterior
+                        try {
+                            const endInput = document.getElementById('end_date');
+                            const currentEnd = endInput && endInput.value ? new Date(endInput.value.replace(' ', 'T')) : null;
+                            const startCopy = new Date(d.getTime());
+                            const endCandidate = new Date(startCopy.getTime());
+                            endCandidate.setHours(endCandidate.getHours() + 1);
+                            if (window.endPicker && (!currentEnd || currentEnd <= d)) {
+                                window.endPicker.setDate(endCandidate, true);
+                            } else if (endInput && (!currentEnd || currentEnd <= d)) {
+                                const pad = (n) => String(n).padStart(2, '0');
+                                const formatted = `${endCandidate.getFullYear()}-${pad(endCandidate.getMonth()+1)}-${pad(endCandidate.getDate())} ${pad(endCandidate.getHours())}:${pad(endCandidate.getMinutes())}`;
+                                endInput.value = formatted;
+                            }
+                        } catch (e) {}
                     }
                 }
             });
@@ -273,6 +288,8 @@
                     }
                 }
             });
+            // Exponer para usar dentro del onChange de startPicker
+            window.endPicker = endPicker;
         }
 
         // Mejorar interactividad de los comboboxes

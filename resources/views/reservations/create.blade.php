@@ -119,7 +119,7 @@
                         <div class="mb-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                             <p class="text-sm text-blue-800">
                                 <i class="fas fa-map-marker-alt mr-2"></i>
-                                <strong>{{ $lockedLabel }}</strong> — ubicación traída desde el calendario
+                                <strong>{{ $lockedLabel }}</strong> — Ubicación registrada en el calendario
                             </p>
                         </div>
                         <input type="hidden" name="location" value="{{ $lockedLocation }}">
@@ -219,6 +219,13 @@
                     @enderror
                 </div>
 
+                {{-- Aviso fin de semana (se controla por JS) --}}
+            <div id="weekendNotice" class="hidden mb-4 p-3 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Estás reservando fuera del horario laboral (sábado/domingo).
+            </div>
+
+
                 <!-- Botones -->
                 <div class="flex justify-end space-x-4 pt-6 border-t border-gray-200">
                     <a href="{{ route('home') }}" class="btn-secondary">
@@ -235,51 +242,86 @@
 
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Flatpickr para fecha/hora con minutos 00, 15, 30, 45
-        if (window.flatpickr) {
-            const startPicker = flatpickr('#start_date', {
-                enableTime: true,
-                time_24hr: false,
-                minuteIncrement: 15,
-                dateFormat: 'Y-m-d H:i',
-                locale: 'es',
-                onChange: function(selectedDates, dateStr, instance) {
-                    // Asegurar redondeo visual si usuario escribe manualmente
-                    if (selectedDates[0]) {
-                        const d = selectedDates[0];
-                        const m = d.getMinutes();
-                        const r = m % 15;
-                        if (r !== 0) {
-                            if (r < 8) d.setMinutes(m - r); else d.setMinutes(m + (15 - r));
-                            d.setSeconds(0);
-                            
-                            instance.setDate(d, true);
+document.addEventListener('DOMContentLoaded', function () {
+    const weekendBox = document.getElementById('weekendNotice');
+
+    function toggleWeekendNotice(dateObj) {
+        if (!dateObj || !weekendBox) return;
+        const day = dateObj.getDay(); // 0=Dom, 6=Sáb
+        const isWeekend = (day === 0 || day === 6);
+        weekendBox.classList.toggle('hidden', !isWeekend);
+    }
+
+    if (window.flatpickr) {
+        const startPicker = flatpickr('#start_date', {
+            enableTime: true,
+            time_24hr: false,
+            minuteIncrement: 15,
+            dateFormat: 'Y-m-d H:i',
+            locale: 'es',
+            onChange: function (selectedDates, dateStr, instance) {
+                if (selectedDates[0]) {
+                    const d = selectedDates[0];
+                    const m = d.getMinutes();
+                    const r = m % 15;
+                    if (r !== 0) {
+                        if (r < 8) d.setMinutes(m - r); else d.setMinutes(m + (15 - r));
+                        d.setSeconds(0);
+                        instance.setDate(d, true);
+                    }
+
+                    // Ajuste automático de end y aviso de fin de semana
+                    try {
+                        const endInput = document.getElementById('end_date');
+                        const currentEnd = endInput && endInput.value ? new Date(endInput.value.replace(' ', 'T')) : null;
+                        const startCopy = new Date(d.getTime());
+                        const endCandidate = new Date(startCopy.getTime());
+                        endCandidate.setHours(endCandidate.getHours() + 1);
+                        if (window.endPicker && (!currentEnd || currentEnd <= d)) {
+                            window.endPicker.setDate(endCandidate, true);
+                        } else if (endInput && (!currentEnd || currentEnd <= d)) {
+                            const pad = (n) => String(n).padStart(2, '0');
+                            const formatted = `${endCandidate.getFullYear()}-${pad(endCandidate.getMonth()+1)}-${pad(endCandidate.getDate())} ${pad(endCandidate.getHours())}:${pad(endCandidate.getMinutes())}`;
+                            endInput.value = formatted;
                         }
+                    } catch (e) {}
+
+                    // Aquí encendemos/apagamos el aviso
+                    toggleWeekendNotice(selectedDates[0]);
+                }
+            }
+        });
+
+        const endPicker = flatpickr('#end_date', {
+            enableTime: true,
+            time_24hr: false,
+            minuteIncrement: 15,
+            dateFormat: 'Y-m-d H:i',
+            locale: 'es',
+            onChange: function (selectedDates, dateStr, instance) {
+                if (selectedDates[0]) {
+                    const d = selectedDates[0];
+                    const m = d.getMinutes();
+                    const r = m % 15;
+                    if (r !== 0) {
+                        if (r < 8) d.setMinutes(m - r); else d.setMinutes(m + (15 - r));
+                        d.setSeconds(0);
+                        instance.setDate(d, true);
                     }
                 }
-            });
-            
-            const endPicker = flatpickr('#end_date', {
-                enableTime: true,
-                time_24hr: false,
-                minuteIncrement: 15,
-                dateFormat: 'Y-m-d H:i',
-                locale: 'es',
-                onChange: function(selectedDates, dateStr, instance) {
-                    if (selectedDates[0]) {
-                        const d = selectedDates[0];
-                        const m = d.getMinutes();
-                        const r = m % 15;
-                        if (r !== 0) {
-                            if (r < 8) d.setMinutes(m - r); else d.setMinutes(m + (15 - r));
-                            d.setSeconds(0);
-                            instance.setDate(d, true);
-                        }
-                    }
-                }
-            });
+            }
+        });
+
+        // Exponer para onChange de start
+        window.endPicker = endPicker;
+
+        // Si el campo ya viene precargado (old/request), mostrar aviso al cargar
+        const startInputVal = document.getElementById('start_date')?.value;
+        if (startInputVal) {
+            const first = new Date(startInputVal.replace(' ', 'T'));
+            if (!isNaN(first.getTime())) toggleWeekendNotice(first);
         }
+    }
 
         // Mejorar interactividad de los comboboxes
         const selects = document.querySelectorAll('select');

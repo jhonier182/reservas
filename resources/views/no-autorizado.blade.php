@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Acceso No Autorizado - TodoList')
+@section('title', 'Acceso No Autorizado - Reservas')
 
 @section('content')
 <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 py-12 px-4 sm:px-6 lg:px-8">

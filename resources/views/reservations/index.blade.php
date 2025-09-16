@@ -247,9 +247,6 @@
                         <a href="{{ route('calendar') }}" class="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200">
                             <i class="fas fa-calendar mr-2"></i>Ver Calendario
                         </a>
-                        <a href="{{ route('google.auth') }}?email={{ Auth::user()->email }}" class="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200">
-                            <i class="fab fa-google mr-2"></i>Sincronizar Google
-                        </a>
                         <a href="{{ route('profile') }}" class="block w-full text-left px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200">
                             <i class="fas fa-user mr-2"></i>Mi Perfil
                         </a>

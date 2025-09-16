@@ -51,19 +51,12 @@
                         <li>• <strong>Arrastra eventos</strong> para cambiar fechas (solo administradores)</li>
                         <li>• <strong>Redimensiona eventos</strong> para cambiar duración (solo administradores)</li>
                     @else
-                        <li>• <strong>Los eventos no se pueden modificar</strong> - Solo los administradores pueden editar reservas</li>
+                        <li>• <strong>Los eventos no se pueden modificar</strong> - Las reservas solo pueden ser modificadas por su creador o por un administrador.</li>
                     @endif
-                    <li>• <strong>Cambia de vista</strong> entre mes, semana, día y lista</li>
+                    <li>• <strong>Cambia de vista</strong> entre mes, semana y dia</li>
                 </ul>
                 
-                @if(auth()->check() && !auth()->user()->isAdmin())
-                    <div class="mt-3 p-3 bg-yellow-50 rounded border border-yellow-200">
-                        <p class="text-sm text-yellow-800">
-                            <i class="fas fa-info-circle mr-2"></i>
-                            <strong>Nota:</strong> Puedes ver todas las reservas del sistema, pero solo los administradores pueden modificarlas.
-                        </p>
-                    </div>
-                @endif
+               
             </div>
         </div>
     </div>

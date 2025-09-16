@@ -22,18 +22,48 @@ class HomeController extends Controller
     public function index(): View
     {
         $user = Auth::user();
-        
-        // Datos básicos para el dashboard
-        $data = [
+        $now = now();
+
+        // Base query: si no es admin, filtrar por el usuario actual
+        $baseQuery = \App\Models\Reservation::query();
+        if (!$user->isAdmin()) {
+            $baseQuery->where('user_id', $user->id);
+        }
+
+        // Estadísticas
+        $activeReservations = (clone $baseQuery)
+            ->where('status', '!=', 'cancelled')
+            ->where('end_date', '>=', $now)
+            ->count();
+
+        $completedReservations = (clone $baseQuery)
+            ->where('status', 'completed')
+            ->count();
+
+        $pendingReservations = (clone $baseQuery)
+            ->where('status', 'pending')
+            ->count();
+
+        $todayEvents = (clone $baseQuery)
+            ->whereDate('start_date', $now->toDateString())
+            ->count();
+
+        // Próximas reservas (limitar a 5)
+        $upcomingReservations = (clone $baseQuery)
+            ->where('status', '!=', 'cancelled')
+            ->where('start_date', '>=', $now)
+            ->orderBy('start_date', 'asc')
+            ->limit(5)
+            ->get();
+
+        return view('home', [
             'user' => $user,
-            'activeReservations' => 0,
-            'completedReservations' => 0,
-            'pendingReservations' => 0,
-            'todayEvents' => 0,
-            'upcomingReservations' => [],
-        ];
-        
-        return view('home', $data);
+            'activeReservations' => $activeReservations,
+            'completedReservations' => $completedReservations,
+            'pendingReservations' => $pendingReservations,
+            'todayEvents' => $todayEvents,
+            'upcomingReservations' => $upcomingReservations,
+        ]);
     }
 
     /**

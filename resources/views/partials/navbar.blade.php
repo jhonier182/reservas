@@ -7,7 +7,7 @@
                     <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
                         <span class="text-white text-xl font-bold">T</span>
                     </div>
-                    <span class="ml-3 text-xl font-bold text-gray-900">TodoList</span>
+                    <span class="ml-3 text-xl font-bold text-gray-900">Reservas</span>
                 </div>
             </div>
 
@@ -47,9 +47,6 @@
                         <div x-show="profileMenuOpen" @click.away="profileMenuOpen = false" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                             <a href="{{ route('profile') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-user mr-2"></i>Mi Perfil
-                            </a>
-                            <a href="{{ route('google.auth') }}?email={{ Auth::user()->email }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                <i class="fas fa-calendar-alt mr-2"></i>Sincronizar Google
                             </a>
                             <hr class="my-1">
                             <form method="POST" action="{{ route('auth.logout') }}">
